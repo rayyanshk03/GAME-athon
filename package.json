@@ -1,0 +1,14 @@
+{
+  "name": "game",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix backend\" \"serve frontend -l 3000\"",
+    "start": "concurrently \"npm start --prefix backend\" \"serve frontend -l 3000\"",
+    "backend": "npm run dev --prefix backend",
+    "frontend": "serve frontend -l 3000"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "serve": "^14.2.4"
+  }
+}

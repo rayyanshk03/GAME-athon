@@ -324,6 +324,10 @@ window.addEventListener('quotesRefreshed', () => {
 //  STOCK SELECTION
 // ────────────────────────────────────────────────────────────
 async function selectStock(ticker) {
+  if (ticker !== selectedTicker) {
+    // Award points for viewing a new stock
+    if (typeof window.awardPoints === 'function') window.awardPoints('VIEW_STOCK');
+  }
   selectedTicker = ticker;
   const s = STOCKS.find(x => x.ticker === ticker);
   if (!s) return;
@@ -563,14 +567,13 @@ else { window.addEventListener('load', init); }
 //  VIEW SWITCHER  (Home ↔ Portfolio)
 // ══════════════════════════════════════════════════════════════
 
-const PORTFOLIO_IDS = ['stock-header','time-tabs','chart-wrapper','stats-grid','.see-more-link','news-section'];
-
 function showView(view) {
   const homePage   = document.getElementById('home-page');
   const navHome    = document.getElementById('nav-home');
   const navPortfolio = document.getElementById('nav-portfolio');
+  const sidebar      = document.getElementById('sidebar');
 
-  // Collect portfolio elements by ID or class
+  // Collect portfolio elements
   const portfolioEls = [
     document.getElementById('stock-header'),
     document.getElementById('time-tabs'),
@@ -585,12 +588,19 @@ function showView(view) {
     homePage.classList.add('visible');
     navHome.classList.add('active');
     navPortfolio.classList.remove('active');
+    
+    // Hide sidebar on Home (ORION) splash
+    if (sidebar) sidebar.classList.add('hidden');
+    
     populateHomePage();
   } else {
     portfolioEls.forEach(el => el.style.display = '');
     homePage.classList.remove('visible');
     navPortfolio.classList.add('active');
     navHome.classList.remove('active');
+    
+    // Show sidebar on Portfolio
+    if (sidebar) sidebar.classList.remove('hidden');
   }
 }
 
@@ -688,3 +698,192 @@ function renderMovers(containerId, stocks, isGainer) {
   const stored = localStorage.getItem('mp_username') || 'Rayyan Sheikh';
   applyUsername(stored);
 })();
+
+// ══════════════════════════════════════════════════════════════
+//  POINTS  ENGINE
+// ══════════════════════════════════════════════════════════════
+
+const PTS_KEY = 'mp_points';
+
+// Point rewards
+const PTS = {
+  VIEW_STOCK   : 5,    // switch to a different stock
+  RUN_PREDICT  : 25,   // open prediction modal
+  LIVE_MODE    : 10,   // activate live chart mode
+  DAILY_BONUS  : 100,  // first visit of the day
+};
+
+// Load or initialise
+let _pts = parseInt(localStorage.getItem(PTS_KEY) || '0', 10);
+
+// Daily login bonus
+(function dailyBonus() {
+  const today = new Date().toDateString();
+  const last  = localStorage.getItem('mp_last_visit');
+  if (last !== today) {
+    _pts += PTS.DAILY_BONUS;
+    localStorage.setItem('mp_last_visit', today);
+    saveAndRender(_pts, PTS.DAILY_BONUS);
+    // Small delay so the page has rendered
+    setTimeout(() => showPointsToast(`+${PTS.DAILY_BONUS} Daily Bonus! 🎉`), 1200);
+  } else {
+    renderPoints(_pts);
+  }
+})();
+
+function saveAndRender(newTotal, delta) {
+  _pts = newTotal;
+  localStorage.setItem(PTS_KEY, String(_pts));
+  renderPoints(_pts, delta);
+}
+
+function renderPoints(total, delta) {
+  const valEl = document.getElementById('pts-value');
+  if (!valEl) return;
+
+  // Animated count-up
+  const from = parseInt(valEl.textContent.replace(/,/g,''), 10) || 0;
+  const to   = total;
+  if (from === to) { valEl.textContent = fmt(to); return; }
+
+  const duration = Math.min(800, Math.abs(to - from) * 4);
+  const start    = performance.now();
+
+  function tick(now) {
+    const t   = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    valEl.textContent = fmt(Math.round(from + (to - from) * ease));
+    if (t < 1) requestAnimationFrame(tick);
+    else valEl.textContent = fmt(to);
+  }
+  requestAnimationFrame(tick);
+
+  // Pop + floating +N
+  if (delta && delta > 0) {
+    valEl.classList.remove('popping');
+    void valEl.offsetWidth; // reflow
+    valEl.classList.add('popping');
+    valEl.addEventListener('animationend', () => valEl.classList.remove('popping'), { once: true });
+
+    const badge = document.getElementById('points-badge');
+    if (badge) {
+      const d = document.createElement('span');
+      d.className = 'pts-delta';
+      d.textContent = '+' + delta;
+      badge.appendChild(d);
+      d.addEventListener('animationend', () => d.remove());
+    }
+  }
+}
+
+function fmt(n) {
+  return n.toLocaleString('en-US');
+}
+
+// Public API — called from selectStock and predict
+window.awardPoints = function(reason) {
+  const delta = PTS[reason] || 0;
+  if (!delta) return;
+  saveAndRender(_pts + delta, delta);
+};
+
+function showPointsToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = [
+    'position:fixed','bottom:28px','left:50%','transform:translateX(-50%)',
+    'background:linear-gradient(135deg,#1a1406,#201a08)',
+    'border:1px solid #f5a62366','border-radius:20px',
+    'padding:9px 20px','font-size:13px','font-weight:600','color:#f5a623',
+    'z-index:9999','box-shadow:0 8px 32px rgba(0,0,0,0.6)',
+    'animation:fadeInOverlay 0.3s ease',
+    'pointer-events:none',
+  ].join(';');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.4s'; setTimeout(()=>t.remove(),400); }, 2800);
+}
+
+/**
+ * ORION BACKGROUND ENGINE
+ */
+(function initOrionBackground() {
+  const CHIP_STOCKS = [
+    { t:'AAPL',  p:255.04, c:+0.37 }, { t:'MSFT',  p:371.38, c:+1.30 },
+    { t:'NVDA',  p:176.98, c:+0.75 }, { t:'TSLA',  p:360.74, c:-5.32 },
+    { t:'GOOGL', p:295.35, c:+1.94 }, { t:'META',  p:572.86, c:-1.10 },
+    { t:'AMZN',  p:209.30, c:-0.80 }, { t:'AMD',   p:216.08, c:+2.79 },
+    { t:'JPM',   p:294.68, c:+0.24 }, { t:'NFLX',  p: 97.63, c:-2.17 }
+  ];
+
+  function spawnChip() {
+    const container = document.getElementById('orion-tickers');
+    if (!container) return;
+    const s = CHIP_STOCKS[Math.floor(Math.random() * CHIP_STOCKS.length)];
+    const up = s.c >= 0;
+    const el = document.createElement('div');
+    el.className = `orion-ticker-chip ${up ? 'up' : 'dn'}`;
+    const sign = up ? '▲ +' : '▼ ';
+    el.innerHTML = `<span class="chip-dot"></span>${s.t} $${s.p.toFixed(2)} <span style="opacity:.7">${sign}${Math.abs(s.c).toFixed(2)}%</span>`;
+    el.style.left = (Math.random() * 90) + '%';
+    el.style.bottom = '-60px';
+    const dur = 15 + Math.random() * 15;
+    el.style.animationDuration = dur + 's';
+    container.appendChild(el);
+    setTimeout(() => el.remove(), dur * 1000);
+  }
+
+  let rafId = null;
+  function startCanvas() {
+    const canvas = document.getElementById('orion-bg-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const resize = () => {
+      canvas.width = canvas.parentElement.offsetWidth;
+      canvas.height = canvas.parentElement.offsetHeight;
+    };
+    window.addEventListener('resize', resize);
+    resize();
+
+    const lines = Array.from({ length: 6 }, () => ({
+      pts: Array.from({ length: 50 }, () => Math.random()),
+      speed: 0.001 + Math.random() * 0.002,
+      offset: Math.random(),
+      color: Math.random() > 0.5 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'
+    }));
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      lines.forEach(l => {
+        l.offset += l.speed;
+        ctx.beginPath();
+        ctx.strokeStyle = l.color;
+        ctx.lineWidth = 2;
+        for (let i = 0; i < l.pts.length; i++) {
+          const x = (i / (l.pts.length - 1)) * canvas.width;
+          const noise = Math.sin(i * 0.5 + l.offset * 10) * 20;
+          const y = (l.pts[i] * canvas.height * 0.6) + (canvas.height * 0.2) + noise;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      });
+      rafId = requestAnimationFrame(draw);
+    }
+    draw();
+  }
+
+  const _orig = window.showView;
+  window.showView = function(v) {
+    _orig(v);
+    if (v === 'home') {
+      setTimeout(() => {
+        startCanvas();
+        for(let i=0; i<10; i++) setTimeout(spawnChip, i*500);
+        setInterval(spawnChip, 3000);
+      }, 50);
+    } else {
+      if (rafId) cancelAnimationFrame(rafId);
+    }
+  };
+})();
+

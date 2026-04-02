@@ -148,10 +148,12 @@ select:focus, input:focus { border-color: var(--primary); outline: none; }
 .active-bets { margin-top: 1rem; }
 .active-bets h3 { font-size: .85rem; font-weight: 700; color: var(--muted); margin-bottom: .5rem; }
 .bet-card {
-  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+  display: flex; flex-direction: column; align-items: stretch; gap: .35rem;
   background: rgba(255,255,255,.04); border: 1px solid var(--border);
   border-radius: 10px; padding: .6rem .75rem; margin-bottom: .4rem; font-size: .8rem;
 }
+.bet-card-row { display: flex; justify-content: space-between; align-items: center; gap: .5rem; flex-wrap: wrap; width: 100%; }
+.bet-card .btn-resolve { margin-left: 0; align-self: flex-start; }
 .bet-symbol { font-weight: 700; color: var(--primary); }
 .bet-dir.up { color: var(--success); } .bet-dir.down { color: var(--danger); }
 .bet-stake, .bet-dur { color: var(--muted); }
@@ -510,3 +512,15 @@ select:focus, input:focus { border-color: var(--primary); outline: none; }
 .confetti-overlay   { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 2rem; background: rgba(245,158,11,.08); animation: fadeIn .3s ease; border-radius: 14px; z-index: 10; pointer-events: none; }
 @keyframes pulse-border { 0%,100% { box-shadow: 0 0 0 0 rgba(244,63,94,.4); } 50% { box-shadow: 0 0 0 4px rgba(244,63,94,.1); } }
 
+/* ── Skeleton Loading ─────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-box, .skeleton-line {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border: 1px solid var(--border);
+}

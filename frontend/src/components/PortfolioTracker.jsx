@@ -5,7 +5,7 @@ import { MOCK_LEADERBOARD } from '../data/mockData';
 import { useGamification } from '../context/GamificationContext';
 
 export default function PortfolioTracker() {
-  const { tradeHistory, totalPnL, winRate, bestTrade, worstTrade, pnlHistory, reputationScore } = usePortfolio();
+  const { tradeHistory, pendingBets, totalPnL, winRate, bestTrade, worstTrade, pnlHistory, reputationScore } = usePortfolio();
   const { points } = useGamification();
   const [filter, setFilter] = useState('all');
 
@@ -55,10 +55,46 @@ export default function PortfolioTracker() {
         </div>
       )}
 
+      {/* Open / pending (placed, not yet resolved on portfolio) */}
+      {pendingBets.length > 0 && (
+        <div className="panel">
+          <h3 className="panel-title">Open bets (recorded)</h3>
+          <p className="panel-desc" style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '0.75rem' }}>
+            These match your active tickets on the Dashboard until you resolve them.
+          </p>
+          <table className="trade-table">
+            <thead>
+              <tr>
+                <th>Stock</th>
+                <th>Direction</th>
+                <th>Stake</th>
+                <th>Mul</th>
+                <th>Duration</th>
+                <th>Entry</th>
+                <th>Placed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pendingBets.map((b) => (
+                <tr key={b.id}>
+                  <td><strong>{b.symbol}</strong></td>
+                  <td>{b.direction === 'up' ? '📈 Up' : '📉 Down'}</td>
+                  <td>{b.stake} pts</td>
+                  <td>{b.multiplier}x</td>
+                  <td>{b.duration}</td>
+                  <td>${Number(b.entryPrice).toFixed(2)}</td>
+                  <td style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{new Date(b.placedAt).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* Trade history */}
       <div className="panel">
         <div className="table-header">
-          <h3 className="panel-title">Trade History</h3>
+          <h3 className="panel-title">Settled trades</h3>
           <div className="filter-row">
             {['all', 'won', 'lost'].map(f => (
               <button key={f} id={`filter-${f}`} className={`filter-btn ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>{f}</button>
@@ -71,8 +107,8 @@ export default function PortfolioTracker() {
           <table className="trade-table">
             <thead><tr><th>Stock</th><th>Direction</th><th>Stake</th><th>Mul</th><th>P&L</th><th>Result</th></tr></thead>
             <tbody>
-              {filtered.slice(0, 20).map((t, i) => (
-                <tr key={i}>
+              {filtered.slice(0, 20).map((t) => (
+                <tr key={t.id ?? `${t.symbol}-${t.resolvedAt}`}>
                   <td><strong>{t.symbol}</strong></td>
                   <td>{t.direction === 'up' ? '📈 Up' : '📉 Down'}</td>
                   <td>{t.stake} pts</td>

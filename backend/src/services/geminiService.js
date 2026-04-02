@@ -4,7 +4,7 @@
  * API key is read from backend .env (never exposed to browser).
  */
 const API_KEY  = process.env.GEMINI_API_KEY;
-const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
 
 async function callGemini(prompt, maxTokens = 300) {
   if (!API_KEY || API_KEY === 'your_actual_gemini_api_key_here') {
@@ -20,7 +20,12 @@ async function callGemini(prompt, maxTokens = 300) {
     }),
   });
 
-  if (!res.ok) throw new Error(`Gemini error ${res.status}: ${await res.text()}`);
+  if (!res.ok) {
+    if (res.status === 429 || res.status === 503) {
+      return '📌 Gemini is rate-limited right now. The StockQuest app will show offline tips in the browser — try again in a minute, or use Learning Hub for definitions.';
+    }
+    throw new Error(`Gemini error ${res.status}: ${await res.text()}`);
+  }
   const data = await res.json();
   return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? 'No response.';
 }

@@ -36,7 +36,11 @@ function loadState() {
 function reducer(state, action) {
   switch (action.type) {
     case 'PLACE_BET': {
-      const bet = { ...action.payload, id: Date.now(), placedAt: Date.now() };
+      const bet = {
+        ...action.payload,
+        id: action.payload.id ?? Date.now(),
+        placedAt: action.payload.placedAt ?? Date.now(),
+      };
       return { ...state, points: state.points - bet.stake, activeBets: [...state.activeBets, bet] };
     }
     case 'RESOLVE_BET': {

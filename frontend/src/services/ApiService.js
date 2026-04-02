@@ -138,8 +138,8 @@ export async function getRecommendations(heldSymbols, available) {
     });
     return text;
   } catch {
-    const { getStockRecommendations } = await import('./AIFeedbackService');
-    return getStockRecommendations(heldSymbols, available);
+    const { getLocalStockRecommendations } = await import('./AIFeedbackService');
+    return getLocalStockRecommendations(heldSymbols, available);
   }
 }
 

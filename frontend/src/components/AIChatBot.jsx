@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { answerTradingQuestion } from '../services/AIFeedbackService';
+import { askChatbot } from '../services/ApiService';
 
 const QUICK = ['What is RSI?', 'How do moving averages work?', 'What is market sentiment?', 'How do I manage risk?'];
 
@@ -19,10 +19,10 @@ export default function AIChatBot() {
     setMessages(m => [...m, { role: 'user', text: question }]);
     setLoading(true);
     try {
-      const ans = await answerTradingQuestion(question);
+      const ans = await askChatbot(question);
       setMessages(m => [...m, { role: 'ai', text: ans }]);
-    } catch {
-      setMessages(m => [...m, { role: 'ai', text: '⚠️ Couldn\'t reach AI. Add VITE_GEMINI_API_KEY to your .env file.' }]);
+    } catch (e) {
+      setMessages(m => [...m, { role: 'ai', text: `⚠️ ${e.message}` }]);
     }
     setLoading(false);
   }

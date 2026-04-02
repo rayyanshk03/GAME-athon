@@ -3,7 +3,7 @@ import StorageService from '../services/StorageService';
 
 const PortfolioContext = createContext(null);
 
-const INITIAL = { tradeHistory: [], pnlHistory: [], friends: [], leagues: [] };
+const INITIAL = { tradeHistory: [], pendingBets: [], pnlHistory: [], friends: [], leagues: [] };
 
 function calcStats(history) {
   if (!history.length) return { totalPnL: 0, winRate: 0, bestTrade: null, worstTrade: null, bestSector: null, avgMultiplier: 1, reputationScore: 0 };
@@ -26,6 +26,27 @@ function reducer(state, action) {
       const pnl     = [...state.pnlHistory, { ts: Date.now(), cumPnL: history.reduce((s, t) => s + t.pointDelta, 0) }].slice(-50);
       return { ...state, tradeHistory: history, pnlHistory: pnl };
     }
+    case 'ADD_PENDING_BET': {
+      const bet = action.payload;
+      const rest = state.pendingBets.filter(b => b.id !== bet.id);
+      return { ...state, pendingBets: [bet, ...rest] };
+    }
+    case 'RESOLVE_PENDING_BET': {
+      const { betId, pointDelta, won, exitPrice } = action.payload;
+      const bet = state.pendingBets.find(b => b.id === betId);
+      if (!bet) return state;
+      const pendingBets = state.pendingBets.filter(b => b.id !== betId);
+      const trade = {
+        ...bet,
+        pointDelta,
+        won,
+        exitPrice,
+        resolvedAt: Date.now(),
+      };
+      const history = [trade, ...state.tradeHistory.slice(0, 99)];
+      const pnl     = [...state.pnlHistory, { ts: Date.now(), cumPnL: history.reduce((s, t) => s + t.pointDelta, 0) }].slice(-50);
+      return { ...state, pendingBets, tradeHistory: history, pnlHistory: pnl };
+    }
     case 'ADD_FRIEND':    return { ...state, friends: [...state.friends, action.payload] };
     case 'CREATE_LEAGUE': return { ...state, leagues: [...state.leagues, { ...action.payload, id: Date.now(), members: [] }] };
     default: return state;
@@ -33,17 +54,26 @@ function reducer(state, action) {
 }
 
 export function PortfolioProvider({ children }) {
-  const [state, dispatch] = useReducer(reducer, null, () => ({ ...INITIAL, ...StorageService.get('portfolio', INITIAL) }));
+  const [state, dispatch] = useReducer(reducer, null, () => {
+    const saved = StorageService.get('portfolio', INITIAL);
+    return {
+      ...INITIAL,
+      ...saved,
+      pendingBets: Array.isArray(saved.pendingBets) ? saved.pendingBets : [],
+    };
+  });
 
   useEffect(() => { StorageService.set('portfolio', state); }, [state]);
 
-  const addTrade     = useCallback(trade  => dispatch({ type: 'ADD_TRADE',    payload: trade }), []);
-  const addFriend    = useCallback(friend => dispatch({ type: 'ADD_FRIEND',   payload: friend }), []);
-  const createLeague = useCallback(league => dispatch({ type: 'CREATE_LEAGUE',payload: league }), []);
-  const stats        = calcStats(state.tradeHistory);
+  const addTrade          = useCallback(trade  => dispatch({ type: 'ADD_TRADE',    payload: trade }), []);
+  const addPendingBet     = useCallback(bet    => dispatch({ type: 'ADD_PENDING_BET', payload: bet }), []);
+  const resolvePendingBet = useCallback(payload => dispatch({ type: 'RESOLVE_PENDING_BET', payload }), []);
+  const addFriend         = useCallback(friend => dispatch({ type: 'ADD_FRIEND',   payload: friend }), []);
+  const createLeague      = useCallback(league => dispatch({ type: 'CREATE_LEAGUE',payload: league }), []);
+  const stats             = calcStats(state.tradeHistory);
 
   return (
-    <PortfolioContext.Provider value={{ ...state, ...stats, addTrade, addFriend, createLeague }}>
+    <PortfolioContext.Provider value={{ ...state, ...stats, addTrade, addPendingBet, resolvePendingBet, addFriend, createLeague }}>
       {children}
     </PortfolioContext.Provider>
   );

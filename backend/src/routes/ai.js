@@ -4,7 +4,7 @@
  * Keeps the API key off the browser — frontend hits /api/ai/* instead of Gemini directly.
  */
 const router    = require('express').Router();
-const { callGemini } = require('../services/geminiService');
+const { callOpenAI } = require('../services/openaiService');
 
 // POST /api/ai/explain  { trade: {} }
 router.post('/explain', async (req, res) => {
@@ -20,7 +20,7 @@ User ${won ? 'WON' : 'LOST'} a trade:
 Write 3 sentences: (1) why the stock moved, (2) what user did right/wrong, (3) one actionable tip.
 Tone: encouraging, educational, concise.`;
 
-    const text = await callGemini(prompt, 280);
+    const text = await callOpenAI(prompt, 280);
     res.json({ text });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -34,7 +34,7 @@ router.post('/tip', async (req, res) => {
     const prompt = `You are a trading coach for StockQuest.
 User stats — Win Rate: ${stats.winRate}% | Trades: ${stats.totalTrades} | Best sector: ${stats.bestSector || 'N/A'} | Avg multiplier: ${stats.avgMultiplier}x
 Give one specific actionable tip in 2 sentences.`;
-    const text = await callGemini(prompt, 180);
+    const text = await callOpenAI(prompt, 180);
     res.json({ text });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -48,7 +48,7 @@ router.post('/chat', async (req, res) => {
     const prompt = `You are an expert stock trading tutor in StockQuest.
 User asks: "${question}"
 Answer in 2-3 sentences. Clear, simple language. End with one encouraging phrase.`;
-    const text = await callGemini(prompt, 220);
+    const text = await callOpenAI(prompt, 220);
     res.json({ text });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -66,7 +66,7 @@ Recommend 2 to consider and 1 to avoid:
 ✅ BUY: [SYMBOL] — reason
 ✅ WATCH: [SYMBOL] — reason
 ⛔ AVOID: [SYMBOL] — reason`;
-    const text = await callGemini(prompt, 220);
+    const text = await callOpenAI(prompt, 220);
     res.json({ text });
   } catch (err) {
     res.status(500).json({ error: err.message });

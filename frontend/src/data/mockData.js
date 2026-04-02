@@ -24,6 +24,38 @@ export function generateHistoricalData(basePrice, volatility = 0.02, days = 7) {
   return data;
 }
 
+/** Deterministic daily OHLCV for offline / API-fallback charts (same symbol → same shape). */
+export function generateDailyFallbackHistory(basePrice, days = 90, seedSymbol = 'SPY') {
+  let seed = 0;
+  for (let i = 0; i < seedSymbol.length; i++) seed = (seed * 31 + seedSymbol.charCodeAt(i)) >>> 0;
+  const rand = () => {
+    seed = (1664525 * seed + 1013904223) >>> 0;
+    return (seed & 0xfffffff) / 0xfffffff;
+  };
+  const out = [];
+  let price = Math.max(basePrice * (0.94 + rand() * 0.08), 1);
+  const now = Date.now();
+  for (let i = days; i >= 0; i--) {
+    const d = new Date(now - i * 86400000);
+    const open = price;
+    const change = price * (rand() * 0.04 - 0.02);
+    price = Math.max(price + change, basePrice * 0.5);
+    const high = Math.max(open, price) * (1 + rand() * 0.012);
+    const low = Math.min(open, price) * (1 - rand() * 0.012);
+    const vol = Math.floor(rand() * 4e6 + 8e5);
+    out.push({
+      time: d.getTime(),
+      dateLabel: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      price: Math.round(price * 100) / 100,
+      open: Math.round(open * 100) / 100,
+      high: Math.round(high * 100) / 100,
+      low: Math.round(low * 100) / 100,
+      volume: vol,
+    });
+  }
+  return out;
+}
+
 export const MOCK_LEADERBOARD = [
   { rank: 1, name: 'TradeMaster99', points: 8420, delta: +312, winRate: 72, badges: ['Market Guru', 'Risk Master'] },
   { rank: 2, name: 'BullRunKing',   points: 7815, delta: -180, winRate: 68, badges: ['First Profit'] },

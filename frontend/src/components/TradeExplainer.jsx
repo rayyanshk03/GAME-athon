@@ -9,8 +9,16 @@ export default function TradeExplainer() {
   const [loading, setLoading] = useState(false);
   const [tipLoading, setTipLoading] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const [cooldown, setCooldown] = useState(0);   // seconds remaining
 
   const trade = tradeHistory[selectedIdx];
+
+  function startCooldown(secs = 10) {
+    setCooldown(secs);
+    const t = setInterval(() => {
+      setCooldown(prev => { if (prev <= 1) { clearInterval(t); return 0; } return prev - 1; });
+    }, 1000);
+  }
 
   async function handleExplain() {
     if (!trade) return;
@@ -19,8 +27,9 @@ export default function TradeExplainer() {
     try {
       const result = await generateTradeExplanation(trade);
       setExplanation(result);
+      startCooldown(10);
     } catch (e) {
-      setExplanation('⚠️ Could not fetch AI analysis. Check your API key in .env');
+      setExplanation(`⚠️ AI error: ${e.message}`);
     }
     setLoading(false);
   }
@@ -29,10 +38,17 @@ export default function TradeExplainer() {
     setTipLoading(true);
     setTip('');
     try {
-      const result = await getImprovementTip({ winRate: winRate || 0, totalTrades: tradeHistory.length, bestSector, worstSector, avgMultiplier: avgMultiplier || 1 });
+      const result = await getImprovementTip({
+        winRate:       winRate       ?? 0,
+        totalTrades:   tradeHistory.length,
+        bestSector:    bestSector   ?? 'N/A',
+        worstSector:   worstSector  ?? 'N/A',
+        avgMultiplier: avgMultiplier ?? 1,
+      });
       setTip(result);
-    } catch {
-      setTip('⚠️ AI tip unavailable. Add VITE_GEMINI_API_KEY to .env');
+      startCooldown(10);
+    } catch (e) {
+      setTip(`⚠️ AI error: ${e.message}`);
     }
     setTipLoading(false);
   }
@@ -42,7 +58,7 @@ export default function TradeExplainer() {
       <div className="panel">
         <h2 className="panel-title">🤖 AI Trade Post-Mortem</h2>
         {tradeHistory.length === 0 ? (
-          <p className="empty-state">Place some trades first — the AI will analyze them here.</p>
+          <p className="empty-state">Place some trades first — the AI will analyse them here.</p>
         ) : (
           <>
             <div className="form-group">
@@ -53,23 +69,19 @@ export default function TradeExplainer() {
                 ))}
               </select>
             </div>
-            <button id="explain-btn" className="btn-primary" onClick={handleExplain} disabled={loading}>
-              {loading ? '🧠 AI is analyzing your trade...' : '✨ Analyze Trade'}
+            <button id="explain-btn" className="btn-primary" onClick={handleExplain} disabled={loading || cooldown > 0}>
+              {loading ? '🧠 Analysing…' : cooldown > 0 ? `⏳ Wait ${cooldown}s` : '✨ Analyse Trade'}
             </button>
             {loading && <div className="loading-bar"><div className="loading-fill" /></div>}
-            {explanation && (
-              <div className="ai-result typewriter">
-                <p>{explanation}</p>
-              </div>
-            )}
+            {explanation && <div className="ai-result typewriter"><p>{explanation}</p></div>}
           </>
         )}
       </div>
 
       <div className="panel">
         <h2 className="panel-title">💡 Personalised Improvement Tip</h2>
-        <button id="tip-btn" className="btn-secondary" onClick={handleTip} disabled={tipLoading}>
-          {tipLoading ? '🧠 Analysing your stats...' : '🔍 Get My Tip'}
+        <button id="tip-btn" className="btn-secondary" onClick={handleTip} disabled={tipLoading || cooldown > 0}>
+          {tipLoading ? '🧠 Analysing your stats…' : cooldown > 0 ? `⏳ Wait ${cooldown}s` : '🔍 Get My Tip'}
         </button>
         {tipLoading && <div className="loading-bar"><div className="loading-fill" /></div>}
         {tip && <div className="ai-result"><p>{tip}</p></div>}

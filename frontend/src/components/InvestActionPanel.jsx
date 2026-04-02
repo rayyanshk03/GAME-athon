@@ -3,38 +3,61 @@ import { useGamification } from '../context/GamificationContext';
 import { usePortfolio } from '../context/PortfolioContext';
 import { useCrowd } from '../context/CrowdIntelligenceContext';
 import { calculateOutcome, rollDoubleOrNothing } from '../engine/OutcomeEngine';
-import { STOCKS } from '../data/mockData';
+import { useData } from '../context/StockDataContext';
 
-export default function InvestActionPanel() {
-  const { points, activeBets, placeBet, resolveBet, riskProfile, setRiskProfile, getMaxStakeVal, validate } = useGamification();
-  const { addTrade } = usePortfolio();
+function formatTime(ts) {
+  try {
+    return new Date(ts).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+  } catch {
+    return '';
+  }
+}
+
+export default function InvestActionPanel({ rsi, trend }) {
+  const { points, activeBets, placeBet, resolveBet, getMaxStakeVal, validate } = useGamification();
+  const { addPendingBet, resolvePendingBet } = usePortfolio();
   const { simMode } = useCrowd();
+  const { stocks, selectedSymbol, setSelectedSymbol, history } = useData();
 
-  const [selected, setSelected]   = useState(STOCKS[0]);
   const [stake, setStake]         = useState('');
   const [direction, setDirection] = useState('up');
   const [multiplier, setMultiplier] = useState(1);
   const [duration, setDuration]   = useState('1h');
   const [error, setError]         = useState('');
-  const [dnMode, setDnMode]       = useState(null); // double-or-nothing bet
+  const [dnMode, setDnMode]       = useState(null);
 
   const maxMul = simMode === 'beginner' ? 1 : 3;
+  const currentStock = stocks.find(s => s.symbol === selectedSymbol) || stocks[0];
 
   function handlePlace() {
     const v = validate(Number(stake));
     if (!v.valid) { setError(v.error); return; }
     setError('');
-    placeBet({ symbol: selected.symbol, sector: selected.sector, stake: Number(stake), direction, multiplier, duration, entryPrice: selected.price });
+    const betId = Date.now();
+    const payload = {
+      id: betId,
+      placedAt: betId,
+      symbol: currentStock.symbol,
+      sector: currentStock.sector || 'General',
+      stake: Number(stake),
+      direction,
+      multiplier,
+      duration,
+      entryPrice: currentStock.price,
+      rsiAtEntry: rsi,
+      trendAtEntry: trend,
+    };
+    placeBet(payload);
+    addPendingBet(payload);
     setStake('');
   }
 
   function handleSimResolve(bet) {
-    // Simulate a random price move (±5%) for demo
-    const move  = selected.price * (Math.random() * 0.1 - 0.05);
-    const exit  = Math.round((selected.price + move) * 100) / 100;
+    const move  = currentStock.price * (Math.random() * 0.1 - 0.05);
+    const exit  = Math.round((currentStock.price + move) * 100) / 100;
     const { pointDelta, won } = calculateOutcome(bet.entryPrice, exit, bet.stake, bet.multiplier, bet.direction);
     resolveBet({ betId: bet.id, pointDelta, won, symbol: bet.symbol, multiplier: bet.multiplier, exitPrice: exit });
-    addTrade({ ...bet, pointDelta, won, exitPrice: exit, resolvedAt: Date.now() });
+    resolvePendingBet({ betId: bet.id, pointDelta, won, exitPrice: exit });
     if (won) setDnMode({ bet, pointDelta });
   }
 
@@ -46,95 +69,126 @@ export default function InvestActionPanel() {
     setDnMode(null);
   }
 
+  const renderCandlestick = () => {
+    if (history.length === 0) return <div className="skeleton-box" style={{height: 120, width: '100%', borderRadius: 8}} />;
+
+    const subset = history.slice(-20);
+    const maxP = Math.max(...subset.map(d => d.high));
+    const minP = Math.min(...subset.map(d => d.low));
+    const range = (maxP - minP) || 1;
+
+    const svgWidth = 100;
+    const svgHeight = 100;
+    const barWidth = svgWidth / subset.length;
+
+    return (
+      <div style={{ background: 'var(--surface)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', marginBottom: '15px' }}>
+        <p style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '6px' }}>Volatility View (Candlestick)</p>
+        <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} style={{ width: '100%', height: '100px', overflow: 'visible' }}>
+          {subset.map((d, i) => {
+            const x = i * barWidth + (barWidth / 2);
+            const yHigh = svgHeight - ((d.high - minP) / range * svgHeight);
+            const yLow = svgHeight - ((d.low - minP) / range * svgHeight);
+            const yOpen = svgHeight - ((d.open - minP) / range * svgHeight);
+            const yClose = svgHeight - ((d.price - minP) / range * svgHeight);
+
+            const isBull = d.price >= d.open;
+            const yTop = Math.min(yOpen, yClose);
+            const yBot = Math.max(yOpen, yClose);
+            const color = isBull ? '#10b981' : '#f43f5e';
+
+            return (
+              <g key={i}>
+                <line x1={x} y1={yHigh} x2={x} y2={yLow} stroke={color} strokeWidth="0.5" />
+                <rect x={x - (barWidth*0.35)} y={yTop} width={barWidth*0.7} height={Math.max(yBot - yTop, 0.5)} fill={color} />
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    );
+  };
+
+  if (!stocks || stocks.length === 0) {
+    return <div className="panel invest-panel skeleton-box" style={{height: 400}}></div>;
+  }
+
   return (
     <div className="panel invest-panel" id="invest-action-panel">
       <h2 className="panel-title">💰 Place Your Bet</h2>
 
-      {/* Stock selector */}
       <div className="form-group">
         <label>Stock</label>
-        <select id="stock-selector" value={selected.symbol} onChange={e => setSelected(STOCKS.find(s => s.symbol === e.target.value))}>
-          {STOCKS.map(s => <option key={s.symbol} value={s.symbol}>{s.symbol} — ${s.price} ({s.changePercent > 0 ? '+' : ''}{s.changePercent}%)</option>)}
+        <select id="stock-selector" value={selectedSymbol || ''} onChange={e => setSelectedSymbol(e.target.value)}>
+          {stocks.map(s => <option key={s.symbol} value={s.symbol}>{s.symbol} — ${Number(s.price).toFixed(2)} ({Number(s.changePercent) >= 0 ? '+' : ''}{Number(s.changePercent).toFixed(2)}%)</option>)}
         </select>
       </div>
 
-      {/* Direction */}
+      {renderCandlestick()}
+
       <div className="form-group direction-row">
-        <button id="btn-up"   className={`dir-btn up   ${direction === 'up'   ? 'active' : ''}`} onClick={() => setDirection('up')}>  📈 Up   </button>
-        <button id="btn-down" className={`dir-btn down ${direction === 'down' ? 'active' : ''}`} onClick={() => setDirection('down')}>📉 Down</button>
+        <button id="btn-up"   type="button" className={`dir-btn up   ${direction === 'up'   ? 'active' : ''}`} onClick={() => setDirection('up')}>  📈 Up   </button>
+        <button id="btn-down" type="button" className={`dir-btn down ${direction === 'down' ? 'active' : ''}`} onClick={() => setDirection('down')}>📉 Down</button>
       </div>
 
-      {/* Stake */}
       <div className="form-group">
         <label>Stake (max {getMaxStakeVal()} pts)</label>
         <input id="stake-input" type="number" min="10" max={getMaxStakeVal()} value={stake}
           onChange={e => setStake(e.target.value)} placeholder="Enter points..." />
       </div>
 
-      {/* Multiplier */}
       <div className="form-group">
-        <label>Risk Multiplier</label>
+        <label>Risk multiplier</label>
         <div className="multiplier-row">
           {[1, 2, 3].map(m => (
-            <button key={m} id={`mul-${m}x`}
+            <button key={m} type="button" id={`mul-${m}x`}
               className={`mul-btn ${multiplier === m ? 'active' : ''} ${m > maxMul ? 'disabled' : ''}`}
               onClick={() => m <= maxMul && setMultiplier(m)}>{m}x</button>
           ))}
         </div>
+        <p style={{ fontSize: '11px', color: 'var(--muted)', marginTop: 6 }}>Higher multiplier increases win/loss size on resolve.</p>
       </div>
 
-      {/* Timer */}
       <div className="form-group">
-        <label>⏱ Bet Duration</label>
+        <label>Bet duration (tracked on ticket)</label>
         <div className="duration-row">
           {['15m', '1h', '1d'].map(d => (
-            <button key={d} id={`dur-${d}`} className={`dur-btn ${duration === d ? 'active' : ''}`}
+            <button key={d} type="button" id={`dur-${d}`} className={`dur-btn ${duration === d ? 'active' : ''}`}
               onClick={() => setDuration(d)}>{d}</button>
           ))}
         </div>
       </div>
 
-      {/* Risk profile */}
-      <div className="form-group">
-        <label>Risk Profile</label>
-        <div className="risk-row">
-          {['safe', 'balanced', 'aggressive'].map(r => (
-            <button key={r} id={`risk-${r}`} className={`risk-btn ${riskProfile === r ? 'active' : ''}`}
-              onClick={() => setRiskProfile(r)}>{r}</button>
-          ))}
-        </div>
-      </div>
-
       {error && <p className="form-error">{error}</p>}
-      <button id="place-bet-btn" className="btn-primary" onClick={handlePlace} disabled={!stake || points < 10}>
+      <button id="place-bet-btn" type="button" className="btn-primary" onClick={handlePlace} disabled={!stake || points < 10}>
         Place Bet 🚀
       </button>
 
-      {/* Active bets */}
       {activeBets.length > 0 && (
         <div className="active-bets">
-          <h3>Active Bets</h3>
+          <h3>Active bets</h3>
           {activeBets.map(bet => (
             <div key={bet.id} className="bet-card">
-              <span className="bet-symbol">{bet.symbol}</span>
-              <span className={`bet-dir ${bet.direction}`}>{bet.direction === 'up' ? '📈' : '📉'} {bet.direction}</span>
-              <span className="bet-stake">{bet.stake} pts × {bet.multiplier}x</span>
-              <span className="bet-dur">{bet.duration}</span>
-              <button className="btn-resolve" onClick={() => handleSimResolve(bet)}>Resolve (Demo)</button>
+              <div className="bet-card-row"><strong>{bet.symbol}</strong> <span className="muted">{formatTime(bet.placedAt)}</span></div>
+              <div className="bet-card-row">
+                <span className={`bet-dir ${bet.direction}`}>{bet.direction === 'up' ? '📈' : '📉'} {bet.direction}</span>
+                <span>{bet.stake} pts × {bet.multiplier}x · {bet.duration}</span>
+              </div>
+              <div className="bet-card-row muted" style={{ fontSize: 12 }}>Entry ${Number(bet.entryPrice).toFixed(2)} · RSI {bet.rsiAtEntry ?? '—'} · Trend {bet.trendAtEntry ?? '—'}</div>
+              <button type="button" className="btn-resolve" onClick={() => handleSimResolve(bet)}>Resolve (demo)</button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Double-or-nothing */}
       {dnMode && (
         <div className="don-modal">
           <div className="don-card">
             <h3>🎰 Double-or-Nothing?</h3>
             <p>You won <strong>+{dnMode.pointDelta} pts</strong>. Risk it all to double?</p>
             <div className="don-actions">
-              <button id="don-yes" className="btn-primary" onClick={handleDoubleOrNothing}>🎲 Roll the Dice</button>
-              <button id="don-no"  className="btn-ghost"   onClick={() => setDnMode(null)}>Keep My Points</button>
+              <button id="don-yes" type="button" className="btn-primary" onClick={handleDoubleOrNothing}>🎲 Roll the Dice</button>
+              <button id="don-no" type="button" className="btn-ghost" onClick={() => setDnMode(null)}>Keep My Points</button>
             </div>
           </div>
         </div>

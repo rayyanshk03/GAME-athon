@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useReducer } from 'react';
-import { computeHybridScore } from '../engine/HybridSignalEngine';
-import StorageService from '../services/StorageService';
+import { computeHybridScore } from '../utils/engines/HybridSignalEngine';
+import StorageService from '../api/StorageService';
 
 const CrowdContext = createContext(null);
 

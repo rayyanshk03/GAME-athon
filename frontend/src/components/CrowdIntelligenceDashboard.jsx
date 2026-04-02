@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useCrowd } from '../context/CrowdIntelligenceContext';
 import { useData } from '../context/StockDataContext';
-import { getCompanyNews } from '../services/FinnhubService';
+import { getCompanyNews } from '../api/apiClient';
 
 function guessSentiment(text) {
   const t = text.toLowerCase();

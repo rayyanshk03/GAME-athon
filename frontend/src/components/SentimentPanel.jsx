@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCompanyNews } from '../services/FinnhubService';
+import { getCompanyNews } from '../api/apiClient';
 
 function guessSentiment(text) {
   const t = text.toLowerCase();

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LEARNING_MODULES, QUIZ_QUESTIONS } from '../data/mockData';
+import { LEARNING_MODULES, QUIZ_QUESTIONS } from '../api/staticData';
 import { useGamification } from '../context/GamificationContext';
 
 export default function LearningHub() {

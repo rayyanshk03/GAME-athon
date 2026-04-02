@@ -1,13 +1,13 @@
 /**
- * HybridSignalEngine.js — Module G
- * Combines crowd votes + AI sentiment into a single confidence score. Pure functions.
+ * HybridSignalEngine.js — Frontend utility (ES module)
+ * Pure math — no API keys, no secrets.
  */
 
 export function computeHybridScore(voteData, aiSentiment = 0) {
   const { bullish = 0, bearish = 0 } = voteData;
   const total = bullish + bearish;
   const crowdScore = total === 0 ? 50 : (bullish / total) * 100;
-  const aiScore    = ((aiSentiment + 1) / 2) * 100;           // -1..+1 → 0..100
+  const aiScore    = ((aiSentiment + 1) / 2) * 100;
   const hybrid     = crowdScore * 0.6 + aiScore * 0.4;
   const direction  = hybrid > 55 ? 'bullish' : hybrid < 45 ? 'bearish' : 'neutral';
   const confidence = (hybrid > 75 || hybrid < 25) ? 'high' : (hybrid > 65 || hybrid < 35) ? 'moderate' : 'low';

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useReducer } from 'react';
-import { checkBadgeUnlocks, checkDailyLogin, generateDailyQuests, getStreakBonus, updateQuestProgress } from '../engine/RewardsEngine';
-import { getMaxStake, validateBet } from '../engine/OutcomeEngine';
-import StorageService from '../services/StorageService';
+import { checkBadgeUnlocks, checkDailyLogin, generateDailyQuests, getStreakBonus, updateQuestProgress } from '../utils/engines/RewardsEngine';
+import { getMaxStake, validateBet } from '../utils/engines/OutcomeEngine';
+import StorageService from '../api/StorageService';
 
 const GamificationContext = createContext(null);
 

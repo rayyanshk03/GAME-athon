@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useCrowd } from '../context/CrowdIntelligenceContext';
-import { STOCKS } from '../data/mockData';
+import { STOCKS } from '../api/staticData';
 import { useGamification } from '../context/GamificationContext';
 
 function formatTime(ms) {

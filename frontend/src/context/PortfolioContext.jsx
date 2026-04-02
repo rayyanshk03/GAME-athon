@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useReducer } from 'react';
-import StorageService from '../services/StorageService';
+import StorageService from '../api/StorageService';
 
 const PortfolioContext = createContext(null);
 

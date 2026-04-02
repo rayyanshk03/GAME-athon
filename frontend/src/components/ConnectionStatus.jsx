@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getConnectionStatus } from '../services/ApiService';
+import { getConnectionStatus } from '../api/apiClient';
 
 /**
  * ConnectionStatus — shows a small pill in the header indicating

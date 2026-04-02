@@ -1,8 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { getQuote, getHistory } from '../services/FinnhubService';
-import { STOCKS as MOCK_STOCKS, generateDailyFallbackHistory } from '../data/mockData';
-
-const TARGET_TICKERS = ['AAPL', 'TSLA', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'NFLX', 'AMD', 'SPY'];
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { fetchAllStocks, fetchStockHistory as apiFetchStockHistory } from '../api/apiClient';
+import { STOCKS as FALLBACK_STOCKS } from '../api/staticData';
 
 const historyCache = {};
 
@@ -12,6 +10,23 @@ function cacheKey(symbol, days) {
 
 export function peekCachedHistory(symbol, days) {
   return historyCache[cacheKey(symbol, days)] || null;
+}
+
+// Simple mock history generator used as a last-resort fallback
+function generateFallbackHistory(basePrice, days = 30) {
+  const data = [];
+  let price = basePrice * 0.95;
+  const now = Date.now();
+  for (let i = days * 24; i >= 0; i--) {
+    price += price * (Math.random() * 0.04 - 0.02);
+    const d = new Date(now - i * 3600000);
+    data.push({
+      time: d.getTime(),
+      dateLabel: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      price: Math.round(price * 100) / 100,
+    });
+  }
+  return data;
 }
 
 const HISTORY_DAYS = 90;
@@ -28,8 +43,6 @@ export function useStockData(pollIntervalMs = 60000) {
 
   const timerRef = useRef(null);
   const visibleRef = useRef(true);
-  const stocksRef = useRef(stocks);
-  stocksRef.current = stocks;
 
   useEffect(() => {
     const handleVisibility = () => {
@@ -37,13 +50,10 @@ export function useStockData(pollIntervalMs = 60000) {
       if (visibleRef.current) fetchQuotes();
     };
     document.addEventListener('visibilitychange', handleVisibility);
-
     fetchQuotes();
-
     timerRef.current = setInterval(() => {
       if (visibleRef.current) fetchQuotes();
     }, pollIntervalMs);
-
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility);
       clearInterval(timerRef.current);
@@ -52,55 +62,15 @@ export function useStockData(pollIntervalMs = 60000) {
 
   async function fetchQuotes() {
     try {
-      const results = await Promise.all(
-        TARGET_TICKERS.map(async (sym) => {
-          try {
-            const q = await getQuote(sym);
-            if (q && q.c) {
-              return {
-                symbol: sym,
-                name: sym,
-                price: q.c,
-                change: q.d,
-                changePercent: q.dp,
-                open: q.o,
-                high: q.h,
-                low: q.l,
-                volume: Math.floor(Math.random() * 5000000) + 1000000,
-              };
-            }
-          } catch (err) {
-            console.warn(`Failed fetching quote for ${sym}`);
-          }
-          return null;
-        })
-      );
-
-      let valid = results.filter((r) => r !== null);
-      if (valid.length === 0) {
-        const bySym = new Map(MOCK_STOCKS.map((s) => [s.symbol, s]));
-        valid = TARGET_TICKERS.map((sym) => {
-          const row = bySym.get(sym);
-          const h = sym.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-          const price = row?.price ?? 45 + (h % 450);
-          return {
-            symbol: sym,
-            name: row?.name ?? sym,
-            price,
-            change: row?.change ?? 0,
-            changePercent: row?.changePercent ?? 0,
-            open: price,
-            high: price,
-            low: price,
-            volume: 1_000_000 + (h % 4_000_000),
-          };
-        });
-      }
-      setStocks(valid);
+      const data = await fetchAllStocks();
+      setStocks(data);
       setLoading(false);
       setError(null);
     } catch (err) {
-      setError(err.message);
+      console.warn('[useStockData] Backend unavailable, using static fallback:', err.message);
+      // Fallback to static data so the UI never breaks
+      if (stocks.length === 0) setStocks(FALLBACK_STOCKS);
+      setError(null); // Don't show error — fallback is transparent
       setLoading(false);
     }
   }
@@ -109,35 +79,22 @@ export function useStockData(pollIntervalMs = 60000) {
     const key = cacheKey(symbol, days);
     if (historyCache[key]) return historyCache[key];
 
-    const stockRow = stocksRef.current.find((s) => s.symbol === symbol);
-    const basePrice = stockRow?.price ?? 150;
-
     try {
-      const data = await getHistory(symbol, 'D', days);
-      if (data.s === 'ok' && data.c && data.c.length > 0) {
-        const formatted = data.c.map((closePrice, index) => {
-          const d = new Date(data.t[index] * 1000);
-          return {
-            time: d.getTime(),
-            dateLabel: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            price: closePrice,
-            open: data.o[index],
-            high: data.h[index],
-            low: data.l[index],
-            volume: data.v[index],
-          };
-        });
-        historyCache[key] = formatted;
-        return formatted;
+      const data = await apiFetchStockHistory(symbol, days);
+      if (data && data.length > 0) {
+        historyCache[key] = data;
+        return data;
       }
     } catch (err) {
-      console.warn(`Failed fetching history for ${symbol}`, err);
+      console.warn(`[useStockData] History fetch failed for ${symbol}:`, err.message);
     }
 
-    const formatted = generateDailyFallbackHistory(basePrice, days, symbol);
-    historyCache[key] = formatted;
-    return formatted;
-  }, []);
+    // Fallback: generate local mock history
+    const stockRow = stocks.find(s => s.symbol === symbol) || FALLBACK_STOCKS.find(s => s.symbol === symbol);
+    const fallback = generateFallbackHistory(stockRow?.price || 150, days);
+    historyCache[key] = fallback;
+    return fallback;
+  }, [stocks]);
 
   useEffect(() => {
     if (!loading && stocks.length > 0 && !selectedSymbol) {
@@ -158,16 +115,14 @@ export function useStockData(pollIntervalMs = 60000) {
     setHistoryError(null);
     let cancelled = false;
 
-    fetchStockHistory(selectedSymbol, HISTORY_DAYS).then((data) => {
+    fetchStockHistory(selectedSymbol, HISTORY_DAYS).then(data => {
       if (cancelled) return;
       setHistory(data);
       setHistoryLoading(false);
       if (!data?.length) setHistoryError('Chart data unavailable');
     });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [selectedSymbol, fetchStockHistory]);
 
   return {

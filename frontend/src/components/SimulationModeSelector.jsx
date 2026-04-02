@@ -1,5 +1,5 @@
 import { useCrowd } from '../context/CrowdIntelligenceContext';
-import { getSimModeConfig } from '../engine/HybridSignalEngine';
+import { getSimModeConfig } from '../utils/engines/HybridSignalEngine';
 
 const MODES = ['beginner', 'pro', 'event'];
 

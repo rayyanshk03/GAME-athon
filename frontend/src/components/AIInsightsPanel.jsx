@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getRecommendations } from '../services/ApiService';
+import { getRecommendations } from '../api/apiClient';
 import { usePortfolio } from '../context/PortfolioContext';
 import { useData } from '../context/StockDataContext';
 import { useGamification } from '../context/GamificationContext';

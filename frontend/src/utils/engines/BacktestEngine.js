@@ -1,6 +1,7 @@
 /**
- * BacktestEngine.js — Module G
- * Replay historical stock data to simulate trade timing. Pure functions.
+ * BacktestEngine.js — Frontend utility (ES module)
+ * Pure math — no API keys, no secrets.
+ * Business logic lives on the backend too; this copy is for local UI use.
  */
 
 export function runBacktest(priceHistory, { entryIndex = 0, direction = 'up', stake = 100, multiplier = 1 } = {}) {
@@ -15,13 +16,13 @@ export function runBacktest(priceHistory, { entryIndex = 0, direction = 'up', st
   const pointDelta = won ? Math.round(rawDelta) : -Math.min(stake, Math.round(rawDelta));
 
   const equity = priceHistory.slice(entryIndex).map((pt, i) => {
-    const pct  = ((pt.price - entryPrice) / entryPrice) * 100;
-    const w    = direction === 'up' ? pt.price >= entryPrice : pt.price <= entryPrice;
-    const d    = stake * (Math.abs(pct) / 100) * multiplier;
+    const pct = ((pt.price - entryPrice) / entryPrice) * 100;
+    const w   = direction === 'up' ? pt.price >= entryPrice : pt.price <= entryPrice;
+    const d   = stake * (Math.abs(pct) / 100) * multiplier;
     return { time: pt.time, price: pt.price, value: Math.round(stake + (w ? d : -d)), index: i };
   });
 
-  const values     = equity.map(e => e.value - stake);
+  const values = equity.map(e => e.value - stake);
   return {
     entryPrice, exitPrice,
     pctChange: Math.round(pctChange * 100) / 100,

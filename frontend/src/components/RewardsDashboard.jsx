@@ -1,5 +1,5 @@
 import { useGamification } from '../context/GamificationContext';
-import { BADGES } from '../engine/RewardsEngine';
+import { BADGES } from '../utils/engines/RewardsEngine';
 
 const RARITY_COLOR = { common: '#64748b', uncommon: '#22c55e', rare: '#3b82f6', epic: '#a855f7', legendary: '#f59e0b' };
 

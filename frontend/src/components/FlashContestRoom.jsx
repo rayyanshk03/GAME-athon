@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useCrowd } from '../context/CrowdIntelligenceContext';
 import { useGamification } from '../context/GamificationContext';
-import { STOCKS } from '../data/mockData';
-import { resolveContest } from '../engine/HybridSignalEngine';
+import { STOCKS } from '../api/staticData';
+import { resolveContest } from '../utils/engines/HybridSignalEngine';
 
 const CONTEST_DURATION = 5 * 60 * 1000; // 5 minutes for demo (plan says 15m)
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { usePortfolio } from '../context/PortfolioContext';
-import { MOCK_LEADERBOARD } from '../data/mockData';
+import { MOCK_LEADERBOARD } from '../api/staticData';
 import { useGamification } from '../context/GamificationContext';
 
 export default function PortfolioTracker() {

@@ -1,6 +1,6 @@
 /**
- * RewardsEngine.js — Module D
- * Badge unlocks, streaks, daily login, and quest generation. Pure functions.
+ * RewardsEngine.js — Frontend utility (ES module)
+ * Pure math — no API keys, no secrets.
  */
 
 export const BADGES = {

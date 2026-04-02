@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { usePortfolio } from '../context/PortfolioContext';
 import { useGamification } from '../context/GamificationContext';
-import { STOCKS } from '../data/mockData';
+import { STOCKS } from '../api/staticData';
 
 export default function SocialHub() {
   const { friends, leagues, addFriend, createLeague, tradeHistory, winRate, reputationScore } = usePortfolio();

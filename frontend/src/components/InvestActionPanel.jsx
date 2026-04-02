@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useGamification } from '../context/GamificationContext';
 import { usePortfolio } from '../context/PortfolioContext';
 import { useCrowd } from '../context/CrowdIntelligenceContext';
-import { calculateOutcome, rollDoubleOrNothing } from '../engine/OutcomeEngine';
+import { calculateOutcome, rollDoubleOrNothing } from '../utils/engines/OutcomeEngine';
 import { useData } from '../context/StockDataContext';
 
 function formatTime(ts) {

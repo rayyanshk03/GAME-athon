@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { askChatbot } from '../services/ApiService';
+import { askChatbot } from '../api/apiClient';
 
 const QUICK = ['What is RSI?', 'How do moving averages work?', 'What is market sentiment?', 'How do I manage risk?'];
 

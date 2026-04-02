@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGamification } from '../context/GamificationContext';
 import { usePortfolio } from '../context/PortfolioContext';
-import { MOCK_LEADERBOARD } from '../data/mockData';
+import { MOCK_LEADERBOARD } from '../api/staticData';
 
 export default function Leaderboard() {
   const { points, badges } = useGamification();

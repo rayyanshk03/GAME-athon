@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import StorageService from '../services/StorageService';
+import StorageService from '../api/StorageService';
 
 const ThemeContext = createContext(null);
 

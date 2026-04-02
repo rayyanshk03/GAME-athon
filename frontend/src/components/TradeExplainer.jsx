@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { generateTradeExplanation, getImprovementTip } from '../services/AIFeedbackService';
+import { explainTrade as generateTradeExplanation, getImprovementTip } from '../api/apiClient';
 import { usePortfolio } from '../context/PortfolioContext';
 
 export default function TradeExplainer() {

@@ -208,6 +208,8 @@ window.openPredictModal = function () {
     btn.classList.remove('loading');
     btn.querySelector('.btn-icon').textContent = '🔮';
     document.getElementById('predict-modal-overlay').classList.add('open');
+    // Award points for running a prediction
+    if (typeof window.awardPoints === 'function') window.awardPoints('RUN_PREDICT');
     // Animate confidence bar after open
     setTimeout(() => {
       document.getElementById('pm-conf-bar').style.width = result.confidence + '%';

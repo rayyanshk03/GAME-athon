@@ -223,6 +223,57 @@
       transition: all 0.2s; position: relative; user-select: none;
     }
     #user-avatar:hover { box-shadow: 0 0 0 3px #7c3aed88; transform: scale(1.06); }
+
+    /* ══════════════════════════════════════════════
+       POINTS BADGE
+    ══════════════════════════════════════════════ */
+    #points-badge {
+      display: flex; align-items: center; gap: 7px;
+      background: linear-gradient(135deg, #1a1406, #201a08);
+      border: 1px solid #f5a62340;
+      border-radius: 20px;
+      padding: 6px 14px 6px 10px;
+      cursor: default;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    #points-badge::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, #f5a62308, transparent 60%);
+      pointer-events: none;
+    }
+    #points-badge:hover { border-color: #f5a62388; box-shadow: 0 0 14px #f5a62322; }
+    .pts-coin {
+      font-size: 16px; line-height: 1;
+      filter: drop-shadow(0 0 4px #f5a62388);
+    }
+    .pts-info { display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
+    .pts-label { font-size: 9px; color: #f5a62388; text-transform: uppercase; letter-spacing: 0.1em; line-height: 1; }
+    .pts-value {
+      font-size: 15px; font-weight: 700; color: #f5a623;
+      letter-spacing: -0.3px; line-height: 1.2;
+      transition: all 0.3s;
+    }
+    /* Pop animation when points change */
+    @keyframes ptsPop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.25); color: #ffd54f; }
+      100% { transform: scale(1); }
+    }
+    .pts-value.popping { animation: ptsPop 0.4s cubic-bezier(0.22,1,0.36,1); }
+    /* +N floating label */
+    .pts-delta {
+      position: absolute; top: -6px; right: 4px;
+      font-size: 10px; font-weight: 700; color: #ffd54f;
+      opacity: 0; pointer-events: none;
+      animation: deltaFloat 1.2s ease forwards;
+    }
+    @keyframes deltaFloat {
+      0%   { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-18px); }
+    }
     /* Avatar dropdown */
     #avatar-dropdown {
       display: none; position: absolute; top: calc(100% + 10px); right: 0;
@@ -249,14 +300,106 @@
     #user-avatar-wrap { position: relative; }
 
     /* ══════════════════════════════════════════════
-       HOME PAGE
+       HOME PAGE — ORION SPLASH
     ══════════════════════════════════════════════ */
     #home-page {
-      display: none; flex-direction: column; gap: 24px;
-      padding: 0 0 40px;
-      animation: slideUp 0.3s cubic-bezier(0.22,1,0.36,1);
+      display: none;
+      align-items: center; justify-content: center;
+      flex-direction: column;
+      min-height: calc(100vh - 60px);
+      position: relative; overflow: hidden;
+      animation: orionFadeIn 0.8s cubic-bezier(0.22,1,0.36,1);
     }
     #home-page.visible { display: flex; }
+
+    @keyframes orionFadeIn {
+      from { opacity: 0; transform: scale(0.92); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* ORION wordmark */
+    .orion-wordmark {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(72px, 12vw, 140px);
+      font-weight: 900;
+      letter-spacing: -4px;
+      background: linear-gradient(135deg, #e8eaf0 0%, #9f67ff 40%, #4f8ef7 70%, #e8eaf0 100%);
+      background-size: 300% 300%;
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: orionShimmer 4s ease infinite;
+      user-select: none;
+      position: relative;
+    }
+    @keyframes orionShimmer {
+      0%   { background-position: 0%   50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0%   50%; }
+    }
+    /* Glow layer behind text */
+    .orion-glow {
+      position: absolute;
+      inset: -20px;
+      background: radial-gradient(ellipse at center, #7c3aed33 0%, transparent 70%);
+      filter: blur(32px);
+      pointer-events: none;
+      animation: orionPulse 3s ease-in-out infinite;
+    }
+    @keyframes orionPulse {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50%       { opacity: 1;   transform: scale(1.08); }
+    }
+    .orion-wrap {
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .orion-tagline {
+      margin-top: 16px;
+      font-size: 13px; font-weight: 500;
+      letter-spacing: 0.35em; text-transform: uppercase;
+      color: #535868;
+      position: relative; z-index: 2;
+    }
+    /* Canvas background */
+    #orion-bg-canvas {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+      opacity: 0.35;
+    }
+    /* Floating ticker chips */
+    #orion-tickers {
+      position: absolute; inset: 0;
+      overflow: hidden; z-index: 1; pointer-events: none;
+    }
+    .orion-ticker-chip {
+      position: absolute;
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+      border: 1px solid transparent;
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      animation: chipFloat linear infinite;
+      white-space: nowrap;
+    }
+    .orion-ticker-chip.up {
+      background: #0f2a1a; border-color: #22c55e33; color: #22c55e;
+    }
+    .orion-ticker-chip.dn {
+      background: #2a0f0f; border-color: #ef444433; color: #ef4444;
+    }
+    .chip-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .orion-ticker-chip.up .chip-dot { background: #22c55e; }
+    .orion-ticker-chip.dn .chip-dot { background: #ef4444; }
+    @keyframes chipFloat {
+      0%   { opacity: 0;   transform: translateY(0px); }
+      8%   { opacity: 0.8; }
+      92%  { opacity: 0.8; }
+      100% { opacity: 0;   transform: translateY(-110vh); }
+    }
+    /* Make orion-wrap sit above canvas */
+    .orion-wrap { z-index: 2; }
 
     /* Home top bar */
     #home-topbar {
@@ -347,15 +490,6 @@
         <input type="text" id="search-input" placeholder="Search a symbol…" />
       </div>
 
-      <nav class="sidebar-nav">
-        <div class="nav-label">MARKETS</div>
-        <a class="nav-item active" id="nav-portfolio" href="#" onclick="showView('portfolio');return false"><span class="nav-icon">💼</span> Portfolio</a>
-        <a class="nav-item" id="nav-home" href="#" onclick="showView('home');return false"><span class="nav-icon">🏠</span> Home</a>
-        <a class="nav-item" href="#"><span class="nav-icon">⭐</span> Watchlist</a>
-        <a class="nav-item" href="#"><span class="nav-icon">📊</span> Markets</a>
-        <a class="nav-item" href="#"><span class="nav-icon">📰</span> News</a>
-      </nav>
-
       <div class="sidebar-section-header">
         My Symbols <span class="symbol-icon">⊙</span>
       </div>
@@ -370,6 +504,15 @@
 
     <!-- Main Content -->
     <main id="main-content">
+      <!-- Top Navbar -->
+      <nav id="top-navbar">
+        <a class="nav-item active" id="nav-portfolio" href="#" onclick="showView('portfolio');return false"><span class="nav-icon">💼</span> Portfolio</a>
+        <a class="nav-item" id="nav-home" href="#" onclick="showView('home');return false"><span class="nav-icon">🏠</span> Home</a>
+        <a class="nav-item" href="#"><span class="nav-icon">⭐</span> Watchlist</a>
+        <a class="nav-item" href="#"><span class="nav-icon">📊</span> Markets</a>
+        <a class="nav-item" href="#"><span class="nav-icon">📰</span> News</a>
+      </nav>
+
       <!-- Stock Header -->
       <div id="stock-header">
         <div class="stock-header-left">
@@ -386,6 +529,14 @@
           </button>
           <div id="header-price"  class="header-price">$213.45</div>
           <div id="header-change" class="header-change positive">+2.87 (+1.36%)</div>
+          <!-- Points Badge -->
+          <div id="points-badge" title="Your MarketPulse Points">
+            <span class="pts-coin">🪙</span>
+            <div class="pts-info">
+              <span class="pts-label">Points</span>
+              <span class="pts-value" id="pts-value">0</span>
+            </div>
+          </div>
           <!-- User Avatar -->
           <div id="user-avatar-wrap">
             <div id="user-avatar" onclick="toggleAvatarDropdown()" title="Account">R</div>
@@ -467,80 +618,16 @@
 
       <!-- ══ HOME PAGE VIEW ══════════════════════════════ -->
       <div id="home-page">
-        <div id="home-topbar">
-          <div>
-            <div class="home-greeting">Welcome back, <span id="home-greeting-name">Rayyan</span> 👋</div>
-            <div class="home-date" id="home-date"></div>
-          </div>
-          <button class="home-back-btn" onclick="showView('portfolio')">← Back to Portfolio</button>
+        <!-- Animated stock chart canvas background -->
+        <canvas id="orion-bg-canvas"></canvas>
+        <!-- Floating ticker chips -->
+        <div id="orion-tickers"></div>
+        <!-- ORION wordmark -->
+        <div class="orion-wrap">
+          <div class="orion-glow"></div>
+          <span class="orion-wordmark">ORION</span>
         </div>
-
-        <!-- Market Indices -->
-        <div>
-          <div class="home-section-title">Market Overview</div>
-          <div class="home-indices">
-            <div class="index-card">
-              <div class="index-name">S&amp;P 500</div>
-              <div class="index-value" id="idx-sp">5,234.18</div>
-              <div class="index-chg pos" id="idx-sp-c">▲ +0.48%</div>
-            </div>
-            <div class="index-card">
-              <div class="index-name">NASDAQ</div>
-              <div class="index-value" id="idx-nq">16,428.82</div>
-              <div class="index-chg pos" id="idx-nq-c">▲ +0.72%</div>
-            </div>
-            <div class="index-card">
-              <div class="index-name">DOW JONES</div>
-              <div class="index-value" id="idx-dj">39,127.14</div>
-              <div class="index-chg neg" id="idx-dj-c">▼ -0.21%</div>
-            </div>
-            <div class="index-card">
-              <div class="index-name">VIX (Fear)</div>
-              <div class="index-value" id="idx-vix">18.43</div>
-              <div class="index-chg neg" id="idx-vix-c">▲ +5.2%</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Quick Stats -->
-        <div class="home-stats-row">
-          <div class="home-stat-card">
-            <div class="home-stat-icon">📈</div>
-            <div>
-              <div class="home-stat-label">Watchlist Stocks</div>
-              <div class="home-stat-val">15</div>
-            </div>
-          </div>
-          <div class="home-stat-card">
-            <div class="home-stat-icon">🟢</div>
-            <div>
-              <div class="home-stat-label">Gainers Today</div>
-              <div class="home-stat-val" id="home-gainers-count">—</div>
-            </div>
-          </div>
-          <div class="home-stat-card">
-            <div class="home-stat-icon">🔴</div>
-            <div>
-              <div class="home-stat-label">Losers Today</div>
-              <div class="home-stat-val" id="home-losers-count">—</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Top Movers -->
-        <div>
-          <div class="home-section-title">Today's Movers</div>
-          <div class="home-movers-grid">
-            <div class="movers-col">
-              <div class="movers-col-header"><span class="mover-hicon">🟢</span> Top Gainers</div>
-              <div id="home-gainers"></div>
-            </div>
-            <div class="movers-col">
-              <div class="movers-col-header"><span class="mover-hicon">🔴</span> Top Losers</div>
-              <div id="home-losers"></div>
-            </div>
-          </div>
-        </div>
+        <div class="orion-tagline">Coming Soon</div>
       </div>
     </main>
   </div>

@@ -347,15 +347,6 @@
         <input type="text" id="search-input" placeholder="Search a symbol…" />
       </div>
 
-      <nav class="sidebar-nav">
-        <div class="nav-label">MARKETS</div>
-        <a class="nav-item active" id="nav-portfolio" href="#" onclick="showView('portfolio');return false"><span class="nav-icon">💼</span> Portfolio</a>
-        <a class="nav-item" id="nav-home" href="#" onclick="showView('home');return false"><span class="nav-icon">🏠</span> Home</a>
-        <a class="nav-item" href="#"><span class="nav-icon">⭐</span> Watchlist</a>
-        <a class="nav-item" href="#"><span class="nav-icon">📊</span> Markets</a>
-        <a class="nav-item" href="#"><span class="nav-icon">📰</span> News</a>
-      </nav>
-
       <div class="sidebar-section-header">
         My Symbols <span class="symbol-icon">⊙</span>
       </div>
@@ -370,6 +361,15 @@
 
     <!-- Main Content -->
     <main id="main-content">
+      <!-- Top Navbar -->
+      <nav id="top-navbar">
+        <a class="nav-item active" id="nav-portfolio" href="#" onclick="showView('portfolio');return false"><span class="nav-icon">💼</span> Portfolio</a>
+        <a class="nav-item" id="nav-home" href="#" onclick="showView('home');return false"><span class="nav-icon">🏠</span> Home</a>
+        <a class="nav-item" href="#"><span class="nav-icon">⭐</span> Watchlist</a>
+        <a class="nav-item" href="#"><span class="nav-icon">📊</span> Markets</a>
+        <a class="nav-item" href="#"><span class="nav-icon">📰</span> News</a>
+      </nav>
+
       <!-- Stock Header -->
       <div id="stock-header">
         <div class="stock-header-left">

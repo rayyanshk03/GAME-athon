@@ -1,175 +1,181 @@
-# ⚡ StockQuest — Gamified AI-Powered Investment Simulator
+# StockQuest 🚀
 
-> A fully functional web prototype where users learn stock trading risk-free, interact with AI insights, earn points through gamification, and compete socially — built with React + Vite + Gemini AI.
-
----
-
-## 🚀 How to Run
-
-```powershell
-# In the project folder (C:\Users\arx_g\OneDrive\buildathon)
-$env:PATH = "C:\Program Files\nodejs;" + $env:PATH
-& "C:\Program Files\nodejs\npm.cmd" install   # First time only
-& "C:\Program Files\nodejs\npm.cmd" run dev   # Starts app at http://localhost:5173
-```
-
-> **Permanent fix**: Add `C:\Program Files\nodejs` to your Windows System PATH so plain `npm run dev` works every time.
+A **gamified, AI-powered stock market simulator** built with React + Vite (frontend) and Node.js + Express (backend), connected to MongoDB Atlas for persistent user data and a live leaderboard.
 
 ---
 
-## 🗂️ Project Architecture
+## 📁 Project Structure
 
 ```
-buildathon/
-├── index.html                    # HTML entry point (Inter font, SEO meta tags)
-├── vite.config.js                # Vite + React plugin config
-├── package.json                  # Dependencies: react, recharts, lucide-react
-├── .env                          # 🔑 VITE_GEMINI_API_KEY (your real key)
-├── .env.example                  # Template for the .env file
-│
-└── src/
-    ├── main.jsx                  # Entry: wraps all Context providers
-    ├── App.jsx                   # Root: tab navigation + page routing
-    ├── index.css                 # 500-line premium design system (dark/light, glassmorphism)
-    │
-    ├── data/
-    │   └── mockData.js           # Mock stocks, leaderboard, learning modules, quiz questions, sentiment feed
-    │
-    ├── engine/                   # ✅ Pure functions — NO React, NO side effects
-    │   ├── OutcomeEngine.js      # calculateOutcome, resolveTimedBet, validateBet, getMaxStake, rollDoubleOrNothing
-    │   ├── RewardsEngine.js      # BADGES, checkDailyLogin, getStreakBonus, checkBadgeUnlocks, generateDailyQuests
-    │   ├── HybridSignalEngine.js # computeHybridScore, resolveContest, getSimModeConfig
-    │   └── BacktestEngine.js     # runBacktest (equity curve, ROI, max drawdown), findOptimalEntry
-    │
-    ├── services/                 # ✅ External integrations
-    │   ├── StorageService.js     # Versioned localStorage wrapper (DB-swappable via setRemote/getRemote stubs)
-    │   └── AIFeedbackService.js  # Live Gemini 1.5 Flash API — generateTradeExplanation, getImprovementTip, answerTradingQuestion, getStockRecommendations
-    │
-    ├── context/                  # ✅ React state management (persisted to localStorage via StorageService)
-    │   ├── ThemeContext.jsx            # dark/light theme — persisted
-    │   ├── GamificationContext.jsx     # SOURCE OF TRUTH: points, activeBets, badges, quests, streaks, riskProfile
-    │   ├── PortfolioContext.jsx        # tradeHistory, P&L, win rate, reputation score, friends, leagues
-    │   └── CrowdIntelligenceContext.jsx# votes, aiSentiment, simMode, challenges, contests
-    │
-    └── components/               # ✅ Thin UI only — all logic lives in /engine & /services
-        ├── Header.jsx                  # Sticky nav: tabs, points badge, streak, badge count, theme toggle
-        ├── OutcomeNotification.jsx     # Animated toast for wins, losses, badge unlocks
-        ├── StockDashboard.jsx          # Stock ticker, price/volume chart (Recharts), RSI, MA20, Crowd+AI indicator
-        ├── InvestActionPanel.jsx       # Stock picker, stake, direction, 1x/2x/3x multiplier, timer, risk profile, active bets, double-or-nothing
-        ├── RewardsDashboard.jsx        # Login streak calendar, daily quests with progress + claim, badge collection grid
-        ├── HallOfFame.jsx              # Ultra-rare legendary/epic achievement showcase
-        ├── PortfolioTracker.jsx        # P&L stats, area chart, best/worst trades, filterable history table
-        ├── Leaderboard.jsx             # Global/daily/weekly podium, rank delta, reputation score column
-        ├── SocialHub.jsx               # 1v1 battle invites, private leagues, friends list (online dot), share card
-        ├── TradeExplainer.jsx          # AI post-mortem (live Gemini), typewriter reveal, personalised tip
-        ├── LearningHub.jsx             # Course cards with progress bars, built-in quiz modal, point rewards
-        ├── AIChatBot.jsx               # Floating chatbot — quick-reply chips, live Gemini answers, typing indicator
-        ├── SimulationModeSelector.jsx  # Beginner / Pro / Event mode picker (colour-coded)
-        ├── TimeChallengePanel.jsx      # Create 1-minute predictions, countdown timers, reward on correct call
-        ├── CrowdIntelligenceDashboard.jsx # Sentiment feed, vote bars (bullish/bearish %), Crowd+AI hybrid score
-        └── FlashContestRoom.jsx        # Flash contest rooms: join with Up/Down, live timer bar, auto-resolve, confetti on win
+BUILD-athon/
+├── frontend/          # React + Vite application
+│   ├── src/
+│   │   ├── components/    # UI components
+│   │   ├── context/       # React context providers
+│   │   ├── api/           # API client & services
+│   │   ├── services/      # AI & external service integrations
+│   │   ├── utils/engines/ # Game logic engines
+│   │   └── index.css      # Global styles
+│   └── .env               # Frontend environment variables
+└── backend/           # Node.js + Express API server
+    ├── src/
+    │   ├── routes/        # Express route handlers
+    │   ├── services/      # Yahoo Finance, FinBERT services
+    │   ├── data/          # Mock/static data
+    │   └── index.js       # Server entry point
+    ├── models.js          # Mongoose User schema
+    ├── db.js              # MongoDB connection manager
+    └── .env               # Backend environment variables
 ```
 
 ---
 
-## 📦 Modules Implemented
+## 🛠 Tech Stack
 
-### Module D — Gamification Engine
-| Feature | Implementation |
-|---|---|
-| Virtual points (start 500) | `GamificationContext` |
-| Place / resolve bets | `OutcomeEngine.calculateOutcome` + `InvestActionPanel` |
-| Timed bets (15m / 1h / 1d) | `OutcomeEngine.resolveTimedBet` |
-| Daily login +10 pts | `RewardsEngine.checkDailyLogin` |
-| 7-day streak bonus | `RewardsEngine.getStreakBonus` |
-| Achievement badges (8 total) | `RewardsEngine.checkBadgeUnlocks` |
-| Daily quests (3/day) | `RewardsEngine.generateDailyQuests` |
-| Double-or-Nothing mode | `OutcomeEngine.rollDoubleOrNothing` |
-| Smart stock alerts (±2%) | `OutcomeEngine.checkSmartAlert` |
-
-### Module E — Performance + Social Layer
-| Feature | Implementation |
-|---|---|
-| Trade history + P&L | `PortfolioContext` + `PortfolioTracker` |
-| Win rate & reputation score | `PortfolioContext.calcStats` |
-| P&L sparkline chart | `PortfolioTracker` (Recharts AreaChart) |
-| Best / worst trade highlights | `PortfolioTracker` |
-| Leaderboard (global/daily/weekly) | `Leaderboard` + `MOCK_LEADERBOARD` |
-| Top-3 podium with crowns | `Leaderboard` |
-| Rank delta badges (▲/▼) | `Leaderboard` |
-| 1v1 battle invites | `SocialHub` (Battles tab) |
-| Private leagues | `SocialHub` (Leagues tab) + `PortfolioContext` |
-| Friends list + online status | `SocialHub` (Friends tab) |
-| Portfolio share card | `SocialHub` (Share tab) |
-
-### Module F — AI Feedback + Learning
-| Feature | Implementation |
-|---|---|
-| **Live Gemini 1.5 Flash API** | `AIFeedbackService.callGemini` |
-| Trade post-mortem analysis | `AIFeedbackService.generateTradeExplanation` + `TradeExplainer` |
-| Typewriter AI reveal | `TradeExplainer` (CSS animation) |
-| Personalised improvement tip | `AIFeedbackService.getImprovementTip` |
-| AI chatbot (floating) | `AIChatBot` + `AIFeedbackService.answerTradingQuestion` |
-| Quick-reply chips | `AIChatBot` |
-| Learning modules (6 courses) | `LearningHub` + `LEARNING_MODULES` |
-| Progress bar per module | `LearningHub` |
-| Quiz modal (3 Qs each) | `LearningHub` (built-in) |
-| Point rewards on quiz | `LearningHub` → `earnPoints` |
-| Graceful fallback (no API key) | `AIFeedbackService.getFallback` |
-
-### Module G — Advanced Modes + Crowd Intelligence
-| Feature | Implementation |
-|---|---|
-| Simulation modes (Beginner / Pro / Event) | `SimulationModeSelector` + `HybridSignalEngine.getSimModeConfig` |
-| Time challenges (1-min predictions) | `TimeChallengePanel` + `CrowdIntelligenceContext` |
-| Crowd voting (bullish/bearish) | `CrowdIntelligenceDashboard` + `CrowdIntelligenceContext.castVote` |
-| Crowd + AI hybrid score | `HybridSignalEngine.computeHybridScore` |
-| Live sentiment feed | `CrowdIntelligenceDashboard` + `SENTIMENT_DATA` |
-| Flash contest rooms | `FlashContestRoom` + `HybridSignalEngine.resolveContest` |
-| Countdown timer + prize pool | `FlashContestRoom` |
-| Confetti on win | `FlashContestRoom` |
-| Strategy backtester | `BacktestEngine.runBacktest` (equity curve, ROI, max drawdown) |
-| Hall of Fame (legendary badges) | `HallOfFame` |
-| Dark / light theme toggle | `ThemeContext` (persisted) |
+| Layer     | Technology                          |
+|-----------|-------------------------------------|
+| Frontend  | React 18, Vite, Context API         |
+| Backend   | Node.js, Express.js                 |
+| Database  | MongoDB Atlas (via Mongoose)        |
+| AI/LLM    | Groq API — Llama 3.1 8B Instant     |
+| Market Data | Yahoo Finance (no API key needed) |
+| Styling   | Vanilla CSS with dark mode          |
 
 ---
 
-## 🔑 Environment Variables
+## ✅ What Was Built & Fixed
 
-| Variable | Purpose |
-|---|---|
-| `VITE_GEMINI_API_KEY` | Your Google Gemini API key — get free at [aistudio.google.com](https://aistudio.google.com) |
-| `VITE_APP_ENV` | `development` or `production` |
+### 🔐 Authentication System (Signup / Login / Logout)
+- Added `password` field to the Mongoose `User` schema in `backend/src/models.js`
+- Created `POST /api/users/signup` — registers a new user in MongoDB Atlas (prevents duplicate `userId`)
+- Created `POST /api/users/login` — validates credentials against the database
+- Built `AuthContext.jsx` — global React context managing `currentUser`, `isAuthenticated`, `login()`, `logout()` using `localStorage` for session persistence (hackathon-friendly, no JWT overhead)
+- Built `AuthPage.jsx` — a premium, animated dark-mode login/signup screen that gates the entire app
+- Updated `main.jsx` to wrap the app in `<AuthProvider>`
+- Updated `App.jsx` to redirect unauthenticated users to `<AuthPage />`
+- Added **Logout button** and **username display** to `Header.jsx`
 
-> If no API key is set, the app uses built-in fallback responses and works fully offline.
+### 🗄 MongoDB Atlas Integration
+- Created `backend/src/db.js` — robust connection manager using `mongoose.connect()` that reads `MONGO_URI` from `.env` and exports `connectDB()` and `isConnected()`
+- Created `backend/src/models.js` — full Mongoose `User` schema: `userId`, `username`, `password`, `points`, `streak`, `badges`, `lastLogin`
+- Created `backend/src/routes/users.js` — Express router with:
+  - `POST /signup` — new user registration
+  - `POST /login` — credential validation
+  - `PATCH /:userId/points` — update user points
+  - `GET /leaderboard` — returns top 50 users sorted by points with rank
+- Wired `connectDB()` into `backend/src/index.js` on server startup
+- Installed `mongoose` npm package in the backend
+- Created `backend/.env` with real MongoDB Atlas URI
+
+### 🤖 FINBOT — AI Chatbot (Groq Llama 3.1)
+- Created `frontend/src/services/AIFeedbackService.js`:
+  - `callGroq(history)` — sends full conversation history to Groq for multi-turn context-aware responses
+  - `answerTradingQuestion(history)` — wrapper with error handling
+  - `getFallback()` — offline fallback message
+- Rewrote `frontend/src/components/AIChatBot.jsx`:
+  - Bot renamed to **FINBOT**
+  - Full conversation history passed to Groq on each message (supports follow-up questions)
+  - Input wrapped in `<form onSubmit>` for proper Enter-key submission
+  - Supports `inline={true}` prop for embedding in dashboard panels
+  - Floating FAB button shows 💬 icon
+- **Replaced AI Market Insights panel** on the Stock Dashboard with FINBOT inline chatbot (`StockDashboard.jsx`)
+
+### 📈 Buy / Sell Betting System
+- Replaced **Up/Down** direction buttons with **Buy/Sell** in `InvestActionPanel.jsx`
+- Updated `OutcomeEngine.js` (`calculateOutcome`) to handle `'buy'`/`'sell'` alongside legacy `'up'`/`'down'` directions — fixes **NaN points bug**
+- Added `multiplier: 1` default to all new bet payloads to prevent NaN calculations
+- Added `isNaN` safety guard in `calculateOutcome` — always returns `0` instead of `NaN`
+
+### ⏱ Auto-Resolve Bets After Duration
+- Added `useEffect` with `setInterval` (30-second polling) in `InvestActionPanel.jsx`
+- Uses `resolveTimedBet(bet, currentPrice)` from `OutcomeEngine.js` to check if a bet's `15m`, `1h`, or `1d` duration has expired
+- On expiry: automatically resolves the bet at the current live stock price, awards/deducts points, and triggers the **Double-or-Nothing** modal if the user won
+
+### 📡 Yahoo Finance API Fix
+- Fixed 404 errors from Yahoo Finance by:
+  - Removing the broken crumb/cookie fetching logic
+  - Correcting the URL query string formatter (was using `&` instead of `?` as separator)
+  - Switched to prefer `query2` over `query1` as it's more stable for unauthenticated requests
+- Verified `getQuote()` and `getHistory()` working correctly for AAPL and other tickers
+
+### 🌿 Git Branch Management
+- Pulled code from `frntd` branch of `https://github.com/rayyanshk03/GAME-athon.git`
+- Committed all changes and force-pushed the `frntd` branch to the `main` branch on GitHub without altering the local workspace
 
 ---
 
-## 🎨 Design System
+## 🚀 Getting Started
 
-| Property | Value |
-|---|---|
-| Theme | Dark-first with light toggle |
-| Font | Inter (Google Fonts) + JetBrains Mono (prices/numbers) |
-| Primary | `#3b82f6` (Electric Blue) |
-| Success | `#10b981` (Emerald Green) |
-| Danger | `#f43f5e` (Rose Red) |
-| Warning / Gold | `#f59e0b` (Amber) |
-| Background | `#060c18` (Deep Navy) |
-| Style | Glassmorphism panels, smooth gradients, micro-animations |
+### Prerequisites
+- Node.js v18+
+- MongoDB Atlas account (or local MongoDB)
+- Groq API key (free at [https://console.groq.com](https://console.groq.com))
+
+### Backend Setup
+
+```bash
+cd backend
+npm install
+```
+
+Create `backend/.env`:
+```env
+PORT=3001
+MONGO_URI=mongodb+srv://<username>:<password>@cluster0.mongodb.net/stockquest?retryWrites=true&w=majority
+FRONTEND_URL=http://localhost:5173
+```
+
+```bash
+npm run dev
+```
+
+### Frontend Setup
+
+```bash
+cd frontend
+npm install
+```
+
+Create `frontend/.env`:
+```env
+VITE_GROQ_API_KEY=your_groq_api_key_here
+```
+
+```bash
+npm run dev
+```
 
 ---
 
-## 🔮 Future Upgrades (Easy Drop-ins)
+## 🔌 API Endpoints
 
-| Upgrade | How |
-|---|---|
-| Real backend (Node.js + Express) | Replace `StorageService.set/get` with `setRemote/getRemote` which already have fetch stubs |
-| Real stock prices | Swap `STOCKS` in `mockData.js` with Alpha Vantage / Yahoo Finance API calls |
-| Multi-user leaderboard | Replace `MOCK_LEADERBOARD` with a real DB query via the backend |
-| WebSocket live prices | Add a WS connection in `StockDashboard` — context + engine are already structured to accept live prices |
-| Real crowd votes | Replace `CrowdIntelligenceContext` state with server-synced votes |
+| Method | Endpoint                      | Description                        |
+|--------|-------------------------------|------------------------------------|
+| POST   | `/api/users/signup`           | Register a new user                |
+| POST   | `/api/users/login`            | Login with userId + password       |
+| PATCH  | `/api/users/:userId/points`   | Update a user's points             |
+| GET    | `/api/users/leaderboard`      | Top 50 users sorted by points      |
+| GET    | `/api/stocks`                 | All available stocks               |
+| GET    | `/api/stocks/:symbol`         | Quote for a specific stock         |
+| GET    | `/api/stocks/:symbol/history` | Historical price data              |
+| GET    | `/api/stocks/:symbol/news`    | Latest news for a stock            |
+| GET    | `/api/health`                 | Server health check                |
 
 ---
 
-*Built for the StockQuest Buildathon — Modules D, E, F & G*
+## 🎮 Features
+
+- **Gamified Trading** — Place Buy/Sell bets using points, with multipliers and Double-or-Nothing
+- **Auto-Resolve Bets** — Bets automatically resolve after their set duration (15m, 1h, 1d)
+- **FINBOT AI Tutor** — Context-aware Groq Llama 3.1 chatbot embedded in the dashboard
+- **Live Leaderboard** — All registered users ranked by points from MongoDB
+- **Sentiment Analysis** — FinBERT-based news sentiment for each stock
+- **Learning Hub** — Educational content for beginner traders
+- **Rewards & Badges** — Daily quests, login streaks, and badge unlocks
+- **Crowd Intelligence** — Community voting on stock directions
+
+---
+
+## 🌐 Live Repository
+
+[https://github.com/rayyanshk03/GAME-athon](https://github.com/rayyanshk03/GAME-athon)

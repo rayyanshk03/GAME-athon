@@ -80,10 +80,30 @@ export async function storeDelete(key) {
 // ─── AI ───────────────────────────────────────────────────────────────────────
 export async function explainTrade(trade) {
   try {
-    const { text } = await apiFetch('/ai/explain', { method: 'POST', body: JSON.stringify({ trade }) });
+    // Send the full trade object so the backend can compute hold duration,
+    // sector context, risk rating, and outcome quality for the detailed analysis.
+    const { text } = await apiFetch('/ai/explain', {
+      method: 'POST',
+      body: JSON.stringify({ trade: {
+        symbol:      trade.symbol,
+        direction:   trade.direction,
+        stake:       trade.stake,
+        multiplier:  trade.multiplier,
+        entryPrice:  trade.entryPrice,
+        exitPrice:   trade.exitPrice,
+        pointDelta:  trade.pointDelta,
+        won:         trade.won,
+        sector:      trade.sector ?? 'Equity',
+        placedAt:    trade.placedAt,
+        resolvedAt:  trade.resolvedAt,
+      }}),
+    });
     return text;
   } catch {
-    return '📊 The stock moved on broader sector momentum. Your timing showed good instincts — next time, confirm with RSI before placing the bet.';
+    const pct = trade.entryPrice && trade.exitPrice
+      ? (((trade.exitPrice - trade.entryPrice) / trade.entryPrice) * 100).toFixed(2)
+      : '?';
+    return `## 📊 Market Context\n${trade.symbol} moved ${pct}% during your hold period, likely driven by broader ${trade.sector ?? 'market'} sector momentum.\n\n## ${trade.won ? '✅' : '❌'} Decision Quality\nYour ${(trade.direction || 'position').toUpperCase()} call ${trade.won ? 'was timely and well-executed' : 'did not align with the prevailing market direction this session'}.\n\n## ⚖️ Risk Assessment\nStake: ${trade.stake} pts × ${trade.multiplier}× — Risk level: ${trade.multiplier >= 3 ? 'HIGH' : trade.multiplier === 2 ? 'MEDIUM' : 'LOW'}.\n\n## 🔍 Key Insight\nAlways confirm your entry with RSI and trend alignment before committing stake.\n\n## 🎯 Action Plan\n1. Review ${trade.symbol} hourly chart for better entry signals.\n2. Use 1× multiplier until win rate on this stock crosses 55%.\n3. Check sector ETF direction before your next ${trade.sector ?? 'sector'} trade.`;
   }
 }
 

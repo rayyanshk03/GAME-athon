@@ -11,7 +11,7 @@ export default function Header({ activeTab, setActiveTab }) {
     { id: 'portfolio',  label: 'Portfolio'     },
     { id: 'ai',         label: 'AI Insights'  },
     { id: 'learning',   label: 'Learning'      },
-    { id: 'crowd',      label: 'Crowd Intel'   },
+    { id: 'crowd',      label: 'People'        },
     { id: 'rewards',    label: 'Rewards'       },
   ];
 

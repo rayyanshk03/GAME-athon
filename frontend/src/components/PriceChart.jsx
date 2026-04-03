@@ -34,7 +34,7 @@ const TIMEFRAMES = [
   { label: '3M',  days: 90  },
   { label: 'YTD', days: null },
   { label: '1Y',  days: 365 },
-  { label: 'ALL', days: null },
+  { label: 'ALL (5Y)', days: null },
 ];
 
 const CHART_TYPES = [
@@ -47,7 +47,7 @@ function toStr(date) { return date.toISOString().split('T')[0]; }
 
 function getRange(label) {
   const now = new Date();
-  if (label === 'ALL') return null;
+  if (label === 'ALL (5Y)') return null;
   if (label === 'YTD') return { from: `${now.getFullYear()}-01-01`, to: toStr(now) };
   const tf = TIMEFRAMES.find(t => t.label === label);
   if (!tf?.days) return null;
@@ -245,7 +245,7 @@ export default function PriceChart({ chartData, symbol = '' }) {
   // ── Timeframe zoom ────────────────────────────────────────────────────
   useEffect(() => {
     if (!priceRef.current || !volRef.current) return;
-    if (tf === 'ALL') {
+    if (tf === 'ALL (5Y)') {
       priceRef.current.timeScale().fitContent();
       volRef.current.timeScale().fitContent();
       return;

@@ -29,7 +29,7 @@ function generateFallbackHistory(basePrice, days = 30) {
   return data;
 }
 
-const HISTORY_DAYS = 90;
+const HISTORY_DAYS = 1825;
 
 export function useStockData(pollIntervalMs = 60000) {
   const [stocks, setStocks] = useState([]);

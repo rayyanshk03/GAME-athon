@@ -1,7 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { askChatbot } from '../api/apiClient';
 
-const QUICK = ['What is RSI?', 'How do moving averages work?', 'What is market sentiment?', 'How do I manage risk?'];
+const QUICK = [
+  'What is RSI?',
+  'How do moving averages work?',
+  'What is a bull vs bear market?',
+  'How do I manage risk?',
+  'What is the P/E ratio?',
+  'Explain MACD',
+  'What is a stop loss?',
+  'What are ETFs?',
+];
 
 export default function AIChatBot() {
   const [open, setOpen]       = useState(false);

@@ -1,10 +1,9 @@
-import { useState } from 'react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useData } from '../context/StockDataContext';
 import InvestActionPanel from './InvestActionPanel';
 import { useCrowd } from '../context/CrowdIntelligenceContext';
 import SentimentPanel from './SentimentPanel';
 import AIInsightsPanel from './AIInsightsPanel';
+import PriceChart from './PriceChart';
 
 function computeRSI(data, period = 14) {
   if (!data || data.length < period + 1) return null;
@@ -35,7 +34,6 @@ export default function StockDashboard() {
     historyLoading,
     historyError,
   } = useData();
-  const [indicator, setIndicator] = useState('price');
   const { getHybridScore } = useCrowd();
 
   if (loading && stocks.length === 0) {
@@ -63,11 +61,25 @@ export default function StockDashboard() {
   const trend   = ma20 != null && ma50 != null ? (ma20 > ma50 ? 'Uptrend' : 'Downtrend') : null;
   const score   = getHybridScore(selectedSymbol || stock.symbol);
 
-  const chartData = history.slice(-48).map(h => ({
-    time: h.dateLabel,
-    price: h.price,
-    volume: h.volume,
-  }));
+  // Build OHLCV data for TradingView chart — derive candle from history if no real OHLCV
+  const chartData = history
+    .filter(h => h.time)
+    .map(h => {
+      const date = new Date(h.time);
+      const yy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      return {
+        time:  `${yy}-${mm}-${dd}`,
+        open:  h.open  ?? h.price,
+        high:  h.high  ?? h.price * 1.005,
+        low:   h.low   ?? h.price * 0.995,
+        close: h.close ?? h.price,
+        value: h.volume ?? 0,
+      };
+    })
+    // lightweight-charts requires unique ascending time
+    .filter((d, i, arr) => i === 0 || d.time > arr[i - 1].time);
 
   return (
     <div className="dashboard-page" id="stock-dashboard">
@@ -93,70 +105,20 @@ export default function StockDashboard() {
             <div>
               <h2 className="stock-name">{stock.name} <span className="stock-symbol">({stock.symbol})</span></h2>
               <div className="stock-price-display">
-                <span className="big-price">${stock.price}</span>
-                <span className={`price-change ${stock.changePercent >= 0 ? 'up' : 'down'}`}>
-                  {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent}%
+                <span className="big-price">${Number(stock.price).toFixed(2)}</span>
+                <span className={`price-change ${Number(stock.changePercent) >= 0 ? 'up' : 'down'}`}>
+                  {Number(stock.changePercent) >= 0 ? '+' : ''}{Number(stock.changePercent).toFixed(2)}%
                 </span>
               </div>
             </div>
-            <div className="indicator-tabs">
-              {['price', 'volume'].map(ind => (
-                <button key={ind} id={`ind-${ind}`} className={`filter-btn ${indicator === ind ? 'active' : ''}`}
-                  onClick={() => setIndicator(ind)}>{ind}</button>
-              ))}
-            </div>
           </div>
 
-          <div style={{ position: 'relative', minHeight: 240 }}>
-            {historyLoading && chartData.length === 0 && (
-              <div
-                className="chart-loading-overlay"
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  zIndex: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'rgba(15, 23, 42, 0.55)',
-                  borderRadius: 8,
-                  fontSize: 13,
-                  color: 'var(--muted)',
-                }}
-              >
-                Loading chart…
-              </div>
-            )}
-            {historyError && chartData.length === 0 && !historyLoading && (
-              <div className="form-error" style={{ padding: '8px 0' }}>{historyError}</div>
-            )}
-            <ResponsiveContainer width="100%" height={240}>
-              {indicator === 'price' ? (
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="priceGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={stock.changePercent >= 0 ? '#10b981' : '#f43f5e'} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={stock.changePercent >= 0 ? '#10b981' : '#f43f5e'} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="time" tick={{ fontSize: 10, fill: 'var(--muted)' }} interval={7} />
-                  <YAxis domain={['auto', 'auto']} tick={{ fontSize: 10, fill: 'var(--muted)' }} />
-                  <Tooltip contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 8 }}
-                    formatter={v => [`$${v}`, 'Price']} />
-                  <Area type="monotone" dataKey="price" stroke={stock.changePercent >= 0 ? '#10b981' : '#f43f5e'}
-                    fill="url(#priceGrad)" strokeWidth={2} dot={false} />
-                </AreaChart>
-              ) : (
-                <BarChart data={chartData}>
-                  <XAxis dataKey="time" tick={{ fontSize: 10, fill: 'var(--muted)' }} interval={7} />
-                  <YAxis tick={{ fontSize: 10, fill: 'var(--muted)' }} />
-                  <Tooltip contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 8 }}
-                    formatter={v => [v.toLocaleString(), 'Volume']} />
-                  <Bar dataKey="volume" fill="#3b82f6" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              )}
-            </ResponsiveContainer>
-          </div>
+          {/* TradingView Pro Chart */}
+          <PriceChart
+            chartData={chartData}
+            stockName={stock.name}
+            symbol={stock.symbol}
+          />
 
           {/* Indicators row */}
           <div className="indicators-row">

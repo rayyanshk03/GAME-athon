@@ -1,8 +1,8 @@
 # StockQuest 🚀
 
-# The Core Problem: Beginner investors lack a risk-free, high-fidelity environment to practice trading, leading to significant financial losses due to a lack of experience and an inability to analyze complex market news and data. 
+The Core Problem: Beginner investors lack a risk-free, high-fidelity environment to practice trading, leading to significant financial losses due to a lack of experience and an inability to analyze complex market news and data. 
 
-# Our Solution: StockQuest is a gamified stock market simulator that bridges the gap between theory and practice. By combining real-time market data, AI-driven insights, and engaging game mechanics, we provide a risk-free environment for users to hone their trading skills, learn from their mistakes, and build the confidence needed to navigate the real markets. 
+Our Solution: StockQuest is a gamified stock market simulator that bridges the gap between theory and practice. By combining real-time market data, AI-driven insights, and engaging game mechanics, we provide a risk-free environment for users to hone their trading skills, learn from their mistakes, and build the confidence needed to navigate the real markets. 
 
 A **gamified, AI-powered stock market simulator** built with React + Vite (frontend) and Node.js + Express (backend), connected to MongoDB Atlas for persistent user data and a live leaderboard.
 

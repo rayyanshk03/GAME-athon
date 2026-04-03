@@ -111,10 +111,10 @@ export async function getRecommendations(heldSymbols, available) {
     return text;
   } catch {
     const pool = (available || []).map(s => s.symbol);
-    const buy  = pool[0] || 'MSFT';
+    const buy = pool[0] || 'MSFT';
     const watch = pool[1] || 'AAPL';
     const avoid = pool[2] || 'TSLA';
-    return `📌 (Offline mode) You're holding: ${(heldSymbols||[]).join(', ') || 'nothing yet'}.\n✅ BUY: ${buy} — strong fundamentals.\n👀 WATCH: ${watch} — monitor trend before entry.\n⛔ AVOID: ${avoid} — high volatility until you have a clear edge.`;
+    return `📌 (Offline mode) You're holding: ${(heldSymbols || []).join(', ') || 'nothing yet'}.\n✅ BUY: ${buy} — strong fundamentals.\n👀 WATCH: ${watch} — monitor trend before entry.\n⛔ AVOID: ${avoid} — high volatility until you have a clear edge.`;
   }
 }
 
@@ -148,15 +148,6 @@ export async function fetchStock(symbol) {
 export async function fetchStockHistory(symbol, days = 7) {
   const data = await apiFetch(`/stocks/${symbol}/history?days=${days}`);
   return data.history ?? data;
-}
-
-export async function getRealExitPrice(symbol, exitAtMs) {
-  try {
-    const { price } = await apiFetch(`/stocks/${symbol}/price-at?exitAt=${exitAtMs}`);
-    return typeof price === 'number' ? price : null;
-  } catch {
-    return null;
-  }
 }
 
 export async function getCompanyNews(symbol, days = 7) {

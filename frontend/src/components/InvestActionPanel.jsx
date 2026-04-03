@@ -4,7 +4,7 @@ import { usePortfolio } from '../context/PortfolioContext';
 import { useCrowd } from '../context/CrowdIntelligenceContext';
 import { calculateOutcome, rollDoubleOrNothing } from '../utils/engines/OutcomeEngine';
 import { useData } from '../context/StockDataContext';
-import { getStockInsight, getRealExitPrice } from '../api/apiClient';
+import { getStockInsight } from '../api/apiClient';
 
 function formatTime(ts) {
   try {
@@ -20,17 +20,13 @@ export default function InvestActionPanel({ rsi, trend }) {
   const { simMode } = useCrowd();
   const { stocks, selectedSymbol, setSelectedSymbol, history } = useData();
 
-  const [stake, setStake]         = useState('');
+  const [stake, setStake] = useState('');
   const [direction, setDirection] = useState('up');
-  const [duration, setDuration]   = useState('1h');
-  const [error, setError]         = useState('');
-  const [dnMode, setDnMode]       = useState(null);
-  const [insight, setInsight]     = useState('');
+  const [duration, setDuration] = useState('1h');
+  const [error, setError] = useState('');
+  const [dnMode, setDnMode] = useState(null);
+  const [insight, setInsight] = useState('');
   const [insightLoading, setInsightLoading] = useState(false);
-  const [resolvingBets, setResolvingBets]   = useState(new Set());
-
-  /** Map bet duration string → milliseconds, used to calculate real exit time */
-  const DURATION_MS = { '15m': 15 * 60 * 1000, '1h': 60 * 60 * 1000, '1d': 24 * 60 * 60 * 1000 };
 
   const currentStock = stocks.find(s => s.symbol === selectedSymbol) || stocks[0];
 
@@ -78,32 +74,14 @@ export default function InvestActionPanel({ rsi, trend }) {
     setStake('');
   }
 
-  async function handleSimResolve(bet) {
-    // Mark this bet as resolving so UI can show a spinner
-    setResolvingBets(prev => new Set(prev).add(bet.id));
-
-    try {
-      // Calculate the real-world exit timestamp based on duration
-      const durationMs = DURATION_MS[bet.duration] ?? DURATION_MS['1h'];
-      const exitAtMs   = bet.placedAt + durationMs;
-
-      // Fetch the real Yahoo Finance price at that exit time
-      let exit = await getRealExitPrice(bet.symbol, exitAtMs);
-
-      // Fallback: use current live price if Yahoo can't find the exact candle
-      if (!exit || isNaN(exit)) {
-        exit = currentStock?.price ?? bet.entryPrice;
-      }
-      exit = Math.round(exit * 100) / 100;
-
-      const prevMul = bet.multiplier || 1;
-      const { pointDelta, won } = calculateOutcome(bet.entryPrice, exit, bet.stake, prevMul, bet.direction);
-      resolveBet({ betId: bet.id, pointDelta, won, symbol: bet.symbol, multiplier: prevMul, exitPrice: exit });
-      resolvePendingBet({ betId: bet.id, pointDelta, won, exitPrice: exit });
-      if (won) setDnMode({ bet, pointDelta });
-    } finally {
-      setResolvingBets(prev => { const s = new Set(prev); s.delete(bet.id); return s; });
-    }
+  function handleSimResolve(bet) {
+    const move = currentStock.price * (Math.random() * 0.1 - 0.05);
+    const exit = Math.round((currentStock.price + move) * 100) / 100;
+    const prevMul = bet.multiplier || 1;
+    const { pointDelta, won } = calculateOutcome(bet.entryPrice, exit, bet.stake, prevMul, bet.direction);
+    resolveBet({ betId: bet.id, pointDelta, won, symbol: bet.symbol, multiplier: prevMul, exitPrice: exit });
+    resolvePendingBet({ betId: bet.id, pointDelta, won, exitPrice: exit });
+    if (won) setDnMode({ bet, pointDelta });
   }
 
   function handleDoubleOrNothing() {
@@ -115,7 +93,7 @@ export default function InvestActionPanel({ rsi, trend }) {
   }
 
   const renderCandlestick = () => {
-    if (history.length === 0) return <div className="skeleton-box" style={{height: 120, width: '100%', borderRadius: 8}} />;
+    if (history.length === 0) return <div className="skeleton-box" style={{ height: 120, width: '100%', borderRadius: 8 }} />;
 
     const subset = history.slice(-20);
     const maxP = Math.max(...subset.map(d => d.high));
@@ -145,7 +123,7 @@ export default function InvestActionPanel({ rsi, trend }) {
             return (
               <g key={i}>
                 <line x1={x} y1={yHigh} x2={x} y2={yLow} stroke={color} strokeWidth="0.5" />
-                <rect x={x - (barWidth*0.35)} y={yTop} width={barWidth*0.7} height={Math.max(yBot - yTop, 0.5)} fill={color} />
+                <rect x={x - (barWidth * 0.35)} y={yTop} width={barWidth * 0.7} height={Math.max(yBot - yTop, 0.5)} fill={color} />
               </g>
             );
           })}
@@ -155,7 +133,7 @@ export default function InvestActionPanel({ rsi, trend }) {
   };
 
   if (!stocks || stocks.length === 0) {
-    return <div className="panel invest-panel skeleton-box" style={{height: 400}}></div>;
+    return <div className="panel invest-panel skeleton-box" style={{ height: 400 }}></div>;
   }
 
   return (
@@ -182,7 +160,7 @@ export default function InvestActionPanel({ rsi, trend }) {
       </div>
 
       <div className="form-group direction-row">
-        <button id="btn-up"   type="button" className={`dir-btn up   ${direction === 'up'   ? 'active' : ''}`} onClick={() => setDirection('up')}>  📈 Up   </button>
+        <button id="btn-up" type="button" className={`dir-btn up   ${direction === 'up' ? 'active' : ''}`} onClick={() => setDirection('up')}>  📈 Up   </button>
         <button id="btn-down" type="button" className={`dir-btn down ${direction === 'down' ? 'active' : ''}`} onClick={() => setDirection('down')}>📉 Down</button>
       </div>
 

@@ -113,8 +113,9 @@ export default function StockDashboard() {
             </div>
           </div>
 
-          {/* TradingView Pro Chart */}
+          {/* TradingView Pro Chart — key forces full remount on stock change */}
           <PriceChart
+            key={stock.symbol}
             chartData={chartData}
             stockName={stock.name}
             symbol={stock.symbol}

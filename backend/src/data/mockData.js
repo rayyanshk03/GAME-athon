@@ -25,7 +25,7 @@ function generateHistoricalData(basePrice, volatility = 0.02, days = 7) {
   return data;
 }
 
-function generateDailyFallbackHistory(basePrice, days = 90, seedSymbol = 'SPY') {
+function generateHourlyFallbackHistory(basePrice, days = 90, seedSymbol = 'SPY') {
   let seed = 0;
   for (let i = 0; i < seedSymbol.length; i++) seed = (seed * 31 + seedSymbol.charCodeAt(i)) >>> 0;
   const rand = () => {
@@ -35,17 +35,22 @@ function generateDailyFallbackHistory(basePrice, days = 90, seedSymbol = 'SPY') 
   const out = [];
   let price = Math.max(basePrice * (0.94 + rand() * 0.08), 1);
   const now = Date.now();
-  for (let i = days; i >= 0; i--) {
-    const d = new Date(now - i * 86400000);
+  const totalPoints = days * 24;
+  for (let i = totalPoints; i >= 0; i--) {
+    const d = new Date(now - i * 3600000); // minus 'i' hours
+    const dayOfWeek = d.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) continue; // skip weekends
+    
     const open = price;
-    const change = price * (rand() * 0.04 - 0.02);
+    const change = price * (rand() * 0.012 - 0.006); // smaller hourly changes
     price = Math.max(price + change, basePrice * 0.5);
-    const high = Math.max(open, price) * (1 + rand() * 0.012);
-    const low  = Math.min(open, price) * (1 - rand() * 0.012);
-    const vol  = Math.floor(rand() * 4e6 + 8e5);
+    const high = Math.max(open, price) * (1 + rand() * 0.006);
+    const low  = Math.min(open, price) * (1 - rand() * 0.006);
+    const vol  = Math.floor(rand() * 1e6 + 2e5); // smaller volume per hour
+    
     out.push({
-      time: d.getTime(),
-      dateLabel: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      time: d.getTime(), // ms timestamp
+      dateLabel: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit' }),
       price: Math.round(price * 100) / 100,
       open:  Math.round(open * 100) / 100,
       high:  Math.round(high * 100) / 100,
@@ -87,4 +92,4 @@ const MOCK_NEWS = {
   ],
 };
 
-module.exports = { STOCKS, MOCK_LEADERBOARD, MOCK_NEWS, generateHistoricalData, generateDailyFallbackHistory };
+module.exports = { STOCKS, MOCK_LEADERBOARD, MOCK_NEWS, generateHistoricalData, generateHourlyFallbackHistory };

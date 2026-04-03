@@ -31,6 +31,8 @@ export default function StockDashboard() {
     selectedSymbol,
     setSelectedSymbol,
     history,
+    historyDays,
+    setHistoryDays,
     historyLoading,
     historyError,
   } = useData();
@@ -65,12 +67,11 @@ export default function StockDashboard() {
   const chartData = history
     .filter(h => h.time)
     .map(h => {
-      const date = new Date(h.time);
-      const yy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, '0');
-      const dd = String(date.getDate()).padStart(2, '0');
+      // lightweight-charts handles Unix timestamps (seconds) natively, which
+      // correctly preserves the intrinsic time distance between intraday points.
+      const timestampSecs = Math.floor(new Date(h.time).getTime() / 1000) - new Date().getTimezoneOffset() * 60;
       return {
-        time:  `${yy}-${mm}-${dd}`,
+        time: timestampSecs,
         open:  h.open  ?? h.price,
         high:  h.high  ?? h.price * 1.005,
         low:   h.low   ?? h.price * 0.995,
@@ -78,8 +79,8 @@ export default function StockDashboard() {
         value: h.volume ?? 0,
       };
     })
-    // lightweight-charts requires unique ascending time
-    .filter((d, i, arr) => i === 0 || d.time > arr[i - 1].time);
+    .sort((a, b) => a.time - b.time) // lightweight-charts requires strictly ascending time
+    .filter((d, i, arr) => i === 0 || d.time > arr[i - 1].time); // Remove exact duplicates
 
   return (
     <div className="dashboard-page" id="stock-dashboard">
@@ -119,6 +120,8 @@ export default function StockDashboard() {
             chartData={chartData}
             stockName={stock.name}
             symbol={stock.symbol}
+            historyDays={historyDays}
+            setHistoryDays={setHistoryDays}
           />
 
           {/* Indicators row */}

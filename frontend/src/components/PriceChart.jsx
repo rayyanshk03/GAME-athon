@@ -45,13 +45,16 @@ const CHART_TYPES = [
 
 function toStr(date) { return date.toISOString().split('T')[0]; }
 
-function getRange(label) {
-  const now = new Date();
+function getRange(label, dataOffsetSecs = 0) {
+  const nowSecs = Math.floor(Date.now() / 1000) - new Date().getTimezoneOffset() * 60;
   if (label === 'ALL') return null;
-  if (label === 'YTD') return { from: `${now.getFullYear()}-01-01`, to: toStr(now) };
+  if (label === 'YTD') {
+    const ytd = new Date(new Date().getFullYear(), 0, 1);
+    return { from: Math.floor(ytd.getTime() / 1000) - ytd.getTimezoneOffset() * 60, to: nowSecs };
+  }
   const tf = TIMEFRAMES.find(t => t.label === label);
   if (!tf?.days) return null;
-  return { from: toStr(new Date(now - tf.days * 86400000)), to: toStr(now) };
+  return { from: nowSecs - tf.days * 86400, to: nowSecs };
 }
 
 // ─── Mock OHLCV (when no prop) ─────────────────────────────────────────
@@ -90,7 +93,7 @@ function baseChartOptions(width) {
 }
 
 // ─── Component ─────────────────────────────────────────────────────────
-export default function PriceChart({ chartData, symbol = '' }) {
+export default function PriceChart({ chartData, symbol = '', historyDays = 7, setHistoryDays }) {
   const priceEl  = useRef(null);
   const volEl    = useRef(null);
   const priceRef = useRef(null);
@@ -99,7 +102,9 @@ export default function PriceChart({ chartData, symbol = '' }) {
   const volSer   = useRef(null);
   const syncLock = useRef(false);
 
-  const [tf,        setTf]        = useState('3M');
+  // Map historyDays backwards to a TF label for initial state
+  const initialTf = TIMEFRAMES.find(t => t.days === historyDays)?.label || '1W';
+  const [tf,        setTf]        = useState(initialTf);
   const [chartType, setChartType] = useState('candlestick');
   const [tooltip,   setTooltip]   = useState(null);
 
@@ -184,8 +189,19 @@ export default function PriceChart({ chartData, symbol = '' }) {
       color: d.close >= d.open ? UP + 'CC' : DOWN + 'CC',
     })));
 
-    pchart.timeScale().fitContent();
-    vchart.timeScale().fitContent();
+    // ── Apply Timeframe natively inside buildCharts ───────────
+    if (tf === 'ALL') {
+      pchart.timeScale().fitContent();
+      vchart.timeScale().fitContent();
+    } else {
+      const range = getRange(tf);
+      if (!range) {
+        pchart.timeScale().fitContent();
+        vchart.timeScale().fitContent();
+      } else {
+        try { pchart.timeScale().setVisibleRange(range); } catch { pchart.timeScale().fitContent(); }
+      }
+    }
 
     // ── Sync time scales bidirectionally ──────────────────────────────
     pchart.timeScale().subscribeVisibleLogicalRangeChange(range => {
@@ -235,26 +251,12 @@ export default function PriceChart({ chartData, symbol = '' }) {
 
     return () => ro.disconnect();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartType, dataKey]);
+  }, [chartType, dataKey, tf]);
 
   useEffect(() => {
     const cleanup = buildCharts();
     return () => { cleanup?.(); destroyCharts(); };
   }, [buildCharts]);
-
-  // ── Timeframe zoom ────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!priceRef.current || !volRef.current) return;
-    if (tf === 'ALL') {
-      priceRef.current.timeScale().fitContent();
-      volRef.current.timeScale().fitContent();
-      return;
-    }
-    const range = getRange(tf);
-    if (!range) { priceRef.current.timeScale().fitContent(); volRef.current.timeScale().fitContent(); return; }
-    try { priceRef.current.timeScale().setVisibleRange(range); } catch { priceRef.current.timeScale().fitContent(); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tf]);
 
   const fmt  = v => v != null ? `$${Number(v).toFixed(2)}` : '—';
   const fmtV = v => !v ? '—' : v >= 1e6 ? `${(v/1e6).toFixed(1)}M` : v >= 1e3 ? `${(v/1e3).toFixed(0)}K` : `${v}`;
@@ -265,8 +267,11 @@ export default function PriceChart({ chartData, symbol = '' }) {
       {/* Toolbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 2px 8px', flexWrap: 'wrap', gap: 4 }}>
         <div style={{ display: 'flex', gap: 2 }}>
-          {TIMEFRAMES.map(({ label }) => (
-            <button key={label} onClick={() => setTf(label)} style={{
+          {TIMEFRAMES.map(({ label, days }) => (
+            <button key={label} onClick={() => {
+              setTf(label);
+              if (setHistoryDays) setHistoryDays(days || 365);
+            }} style={{
               padding: '3px 9px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12,
               fontWeight: tf === label ? 700 : 400,
               background: tf === label ? 'rgba(59,130,246,0.2)' : 'transparent',

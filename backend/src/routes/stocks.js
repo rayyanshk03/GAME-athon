@@ -6,7 +6,7 @@
  */
 
 const router = require('express').Router();
-const { STOCKS, MOCK_NEWS, generateDailyFallbackHistory } = require('../data/mockData');
+const { STOCKS, MOCK_NEWS, generateHourlyFallbackHistory } = require('../data/mockData');
 
 let FinnhubService = null;
 if (process.env.FINNHUB_API_KEY) {
@@ -60,13 +60,13 @@ router.get('/:symbol/history', async (req, res) => {
 
   if (FinnhubService) {
     try {
-      const data = await FinnhubService.getHistory(stock.symbol, 'D', days);
+      const data = await FinnhubService.getHistory(stock.symbol, '60', days);
       if (data.s === 'ok' && data.c && data.c.length > 0) {
         const history = data.c.map((closePrice, index) => {
           const d = new Date(data.t[index] * 1000);
           return {
             time: d.getTime(),
-            dateLabel: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            dateLabel: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit' }),
             price: closePrice,
             open:  data.o[index],
             high:  data.h[index],
@@ -80,7 +80,7 @@ router.get('/:symbol/history', async (req, res) => {
   }
 
   // Fallback: generate mock history
-  const history = generateDailyFallbackHistory(stock.price, days, stock.symbol);
+  const history = generateHourlyFallbackHistory(stock.price, days, stock.symbol);
   res.json({ symbol: stock.symbol, days, history });
 });
 

@@ -5,6 +5,7 @@
  */
 const router = require('express').Router();
 const { callOpenAI, localRecommend, localExplain, localTip } = require('../services/openaiService');
+const { askFinGPT } = require('../services/fingptService');
 
 // POST /api/ai/explain  { trade: {} }
 router.post('/explain', async (req, res) => {
@@ -47,17 +48,28 @@ Give one specific actionable tip in 2 sentences.`;
 });
 
 // POST /api/ai/chat  { question: string }
+// Priority: FinGPT RAG → OpenAI → local fallback
 router.post('/chat', async (req, res) => {
   try {
     const { question } = req.body;
-    const fallback = '💡 Combine the chart, RSI/trend signals, and Crowd+AI score before placing a bet. Check the Learning Hub for deeper lessons. You\'ve got this!';
+    const localFallback = '💡 Combine the chart, RSI/trend signals, and Crowd+AI score before placing a bet. Check the Learning Hub for deeper lessons. You\'ve got this!';
 
+    // 1️⃣ Try FinGPT RAG first
+    try {
+      const ragAnswer = await askFinGPT(question);
+      console.log('[FinGPT] ✅ RAG answered:', question.slice(0, 60));
+      return res.json({ text: ragAnswer, source: 'fingpt' });
+    } catch (ragErr) {
+      console.warn('[FinGPT] ⚠️  RAG failed, trying OpenAI:', ragErr.message);
+    }
+
+    // 2️⃣ Fall back to OpenAI (if key present) or local
     const prompt = `You are an expert stock trading tutor in StockQuest.
 User asks: "${question}"
 Answer in 2-3 sentences. Clear, simple language. End with one encouraging phrase.`;
 
-    const text = await callOpenAI(prompt, 220, fallback);
-    res.json({ text });
+    const text = await callOpenAI(prompt, 220, localFallback);
+    res.json({ text, source: 'openai' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -96,6 +96,8 @@ export function useStockData(pollIntervalMs = 60000) {
     return fallback;
   }, [stocks]);
 
+  const [historyDays, setHistoryDays] = useState(7); // default 1W
+
   useEffect(() => {
     if (!loading && stocks.length > 0 && !selectedSymbol) {
       setSelectedSymbol(stocks[0].symbol);
@@ -105,7 +107,7 @@ export function useStockData(pollIntervalMs = 60000) {
   useEffect(() => {
     if (!selectedSymbol) return;
 
-    const cached = peekCachedHistory(selectedSymbol, HISTORY_DAYS);
+    const cached = peekCachedHistory(selectedSymbol, historyDays);
     if (cached?.length) {
       setHistory(cached);
       setHistoryError(null);
@@ -115,7 +117,7 @@ export function useStockData(pollIntervalMs = 60000) {
     setHistoryError(null);
     let cancelled = false;
 
-    fetchStockHistory(selectedSymbol, HISTORY_DAYS).then(data => {
+    fetchStockHistory(selectedSymbol, historyDays).then(data => {
       if (cancelled) return;
       setHistory(data);
       setHistoryLoading(false);
@@ -123,7 +125,7 @@ export function useStockData(pollIntervalMs = 60000) {
     });
 
     return () => { cancelled = true; };
-  }, [selectedSymbol, fetchStockHistory]);
+  }, [selectedSymbol, fetchStockHistory, historyDays]);
 
   return {
     stocks,
@@ -132,6 +134,8 @@ export function useStockData(pollIntervalMs = 60000) {
     fetchStockHistory,
     selectedSymbol,
     setSelectedSymbol,
+    historyDays,
+    setHistoryDays,
     history,
     historyLoading,
     historyError,

@@ -19,7 +19,7 @@ const QUEST_POOL = [
   { id: 'q2', title: 'Place 3 trades',               type: 'trades',      target: 3,  reward: 15 },
   { id: 'q3', title: 'Use a 2x multiplier',          type: 'multiplier',  target: 1,  reward: 20 },
   { id: 'q4', title: 'Invest in a tech stock',       type: 'sector',      target: 1,  reward: 15, sector: 'Technology' },
-  { id: 'q5', title: 'Win a timed bet',              type: 'timed_win',   target: 1,  reward: 30 },
+  { id: 'q5', title: 'Answer daily trivia correctly',type: 'timed_win',   target: 1,  reward: 30 },
   { id: 'q6', title: 'Vote in crowd intelligence',   type: 'vote',        target: 1,  reward: 10 },
   { id: 'q7', title: 'Complete a learning quiz',     type: 'quiz',        target: 1,  reward: 20 },
   { id: 'q8', title: 'Earn 50 pts in one trade',     type: 'single_earn', target: 50, reward: 35 },
@@ -46,7 +46,7 @@ export function checkBadgeUnlocks(stats, currentBadgeIds = []) {
   if (!has('market_guru')  && stats.totalWins >= 10)         newBadges.push(BADGES.MARKET_GURU);
   if (!has('risk_master')  && stats.tripleWins >= 3)         newBadges.push(BADGES.RISK_MASTER);
   if (!has('streak_king')  && stats.loginStreak >= 7)        newBadges.push(BADGES.STREAK_KING);
-  if (!has('diversified')  && stats.uniqueStocks >= 5)       newBadges.push(BADGES.DIVERSIFIED);
+  if (!has('diversified')  && stats.uniqueStocks.size >= 5)  newBadges.push(BADGES.DIVERSIFIED);
   if (!has('point_hunter') && stats.totalPoints >= 2000)     newBadges.push(BADGES.POINT_HUNTER);
   if (!has('ten_streak')   && stats.winStreak >= 10)         newBadges.push(BADGES.TEN_STREAK);
   if (!has('millionaire')  && stats.lifetimePoints >= 1e6)   newBadges.push(BADGES.MILLIONAIRE);
@@ -60,9 +60,12 @@ export function generateDailyQuests() {
   return shuffled.slice(0, 3).map(q => ({ ...q, progress: 0, completed: false }));
 }
 
-export function updateQuestProgress(quests, eventType, value = 1) {
+export function updateQuestProgress(quests, eventType, value = 1, metadata = {}) {
   return quests.map(q => {
     if (q.completed || q.type !== eventType) return q;
+    // For 'sector' quests, we must match the correct sector
+    if (q.sector && metadata.sector !== q.sector) return q;
+    
     const progress = Math.min(q.progress + value, q.target);
     return { ...q, progress, completed: progress >= q.target };
   });

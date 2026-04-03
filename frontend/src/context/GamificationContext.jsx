@@ -62,15 +62,20 @@ function reducer(state, action) {
         loginStreak:  state.loginStreak,
       };
       const newBadges    = checkBadgeUnlocks(newStats, state.badges.map(b => b.id));
-      const quests       = updateQuestProgress(state.dailyQuests, 'trades');
-      const quests2      = updateQuestProgress(won ? updateQuestProgress(quests, 'wins') : quests, won && pointDelta >= 50 ? 'single_earn' : '__', pointDelta);
+      
+      let quests = updateQuestProgress(state.dailyQuests, 'trades');
+      if (won) quests = updateQuestProgress(quests, 'wins');
+      if (won && pointDelta >= 50) quests = updateQuestProgress(quests, 'single_earn', pointDelta);
+      if (multiplier >= 2) quests = updateQuestProgress(quests, 'multiplier');
+      if (bet.sector) quests = updateQuestProgress(quests, 'sector', 1, { sector: bet.sector });
+
       return {
         ...state,
         points: newPoints, lifetimePoints: newLifetime,
         activeBets: state.activeBets.filter(b => b.id !== betId),
         tradeHistory: newHistory, stats: newStats,
         badges: [...state.badges, ...newBadges],
-        dailyQuests: quests2,
+        dailyQuests: quests,
         notifications: newBadges.length ? [...newBadges.map(b => ({ type: 'badge', badge: b, id: Date.now() + Math.random() })), ...state.notifications] : state.notifications,
       };
     }
@@ -90,6 +95,10 @@ function reducer(state, action) {
       const quests = state.dailyQuests.map(q => q.id === action.payload ? { ...q, rewardClaimed: true } : q);
       const quest  = state.dailyQuests.find(q => q.id === action.payload);
       return { ...state, dailyQuests: quests, points: state.points + (quest?.reward || 0) };
+    }
+    case 'ADVANCE_QUEST': {
+      const quests = updateQuestProgress(state.dailyQuests, action.payload.type, action.payload.value, action.payload.metadata);
+      return { ...state, dailyQuests: quests };
     }
     default: return state;
   }
@@ -118,11 +127,12 @@ export function GamificationProvider({ children }) {
   const setRiskProfile = useCallback((p)         => dispatch({ type: 'SET_RISK_PROFILE', payload: p }), []);
   const dismissNotif   = useCallback((id)        => dispatch({ type: 'DISMISS_NOTIFICATION', payload: id }), []);
   const claimQuest     = useCallback((id)        => dispatch({ type: 'COMPLETE_QUEST', payload: id }), []);
+  const advanceQuest   = useCallback((type, value = 1, metadata = {}) => dispatch({ type: 'ADVANCE_QUEST', payload: { type, value, metadata } }), []);
   const getMaxStakeVal = useCallback(() => getMaxStake(state.points, state.riskProfile), [state.points, state.riskProfile]);
   const validate       = useCallback((stake)     => validateBet({ stake, points: state.points, maxStake: getMaxStakeVal() }), [state.points, getMaxStakeVal]);
 
   return (
-    <GamificationContext.Provider value={{ ...state, placeBet, resolveBet, earnPoints, setRiskProfile, dismissNotif, claimQuest, getMaxStakeVal, validate }}>
+    <GamificationContext.Provider value={{ ...state, placeBet, resolveBet, earnPoints, setRiskProfile, dismissNotif, claimQuest, advanceQuest, getMaxStakeVal, validate }}>
       {children}
     </GamificationContext.Provider>
   );

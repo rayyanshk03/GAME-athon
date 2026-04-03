@@ -19,7 +19,7 @@ const DIFF_COLORS = {
 };
 
 export default function LearningHub() {
-  const { earnPoints } = useGamification();
+  const { earnPoints, advanceQuest } = useGamification();
 
   const [progress,  setProgress]  = useState(loadProgress);
   const [lesson,    setLesson]    = useState(null);
@@ -33,7 +33,8 @@ export default function LearningHub() {
   // ── Lesson viewer ──────────────────────────────────────────────────────────
   function openLesson(mod) {
     const done = progress[mod.id] || 0;
-    const idx  = Math.min(done, mod.lessons.length - 1);
+    // If completed, we want 'Review' to start from the first lesson
+    const idx = done >= mod.lessons.length ? 0 : done;
     setLesson({ mod, idx });
   }
 
@@ -71,6 +72,7 @@ export default function LearningHub() {
     const score = qs.reduce((s, q, i) => s + (answers[i] === q.answer ? 1 : 0), 0);
     const reward = score === qs.length ? 50 : score >= qs.length / 2 ? 20 : 0;
     if (reward) earnPoints(reward);
+    if (advanceQuest) advanceQuest('quiz', 1);
   }
 
   const qs = quiz ? (QUIZ_QUESTIONS[quiz.id] || []) : [];

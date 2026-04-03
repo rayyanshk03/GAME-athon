@@ -81,7 +81,7 @@ const CATEGORY_META = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function TriviaPanel() {
-  const { earnPoints } = useGamification();
+  const { earnPoints, advanceQuest } = useGamification();
   const pool = useRef(buildQuestionPool());
 
   // Active question state
@@ -143,6 +143,7 @@ export default function TriviaPanel() {
       const fast  = timeLeft > 45; // answered in < 15 s
       const pts   = REWARD_CORRECT + (fast ? REWARD_FAST : 0);
       earnPoints(pts);
+      if (advanceQuest) advanceQuest('timed_win');
       setStreak(s => s + 1);
     } else {
       setStreak(0);

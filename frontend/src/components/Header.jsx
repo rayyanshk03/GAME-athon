@@ -2,17 +2,18 @@ import { useGamification } from '../context/GamificationContext';
 import { useTheme } from '../context/ThemeContext';
 import ConnectionStatus from './ConnectionStatus';
 
-export default function Header({ activeTab, setActiveTab }) {
+export default function Header({ activeTab, setActiveTab, user, onLogout }) {
   const { points, loginStreak, badges } = useGamification();
   const { theme, toggle } = useTheme();
 
   const tabs = [
-    { id: 'dashboard',  label: 'Dashboard'    },
-    { id: 'portfolio',  label: 'Portfolio'     },
-    { id: 'ai',         label: 'AI Insights'  },
-    { id: 'learning',   label: 'Learning'      },
-    { id: 'crowd',      label: 'Crowd Intel'   },
-    { id: 'rewards',    label: 'Rewards'       },
+    { id: 'dashboard',  label: 'Dashboard'       },
+    { id: 'virtual',    label: '💼 Virtual Portfolio' },
+    { id: 'portfolio',  label: 'Portfolio'        },
+    { id: 'ai',         label: 'AI Insights'     },
+    { id: 'learning',   label: 'Learning'         },
+    { id: 'crowd',      label: 'Crowd Intel'      },
+    { id: 'rewards',    label: 'Rewards'          },
   ];
 
   return (
@@ -35,6 +36,12 @@ export default function Header({ activeTab, setActiveTab }) {
 
       <div className="header-meta">
         <ConnectionStatus />
+        
+        <div className="user-profile-header">
+           <span className="user-name-tag">{user?.username || 'Guest'}</span>
+           <button className="logout-btn" onClick={onLogout} title="Logout">🚪</button>
+        </div>
+
         <div className="points-badge">
           <span className="points-icon">🪙</span>
           <span className="points-value">{points.toLocaleString()}</span>

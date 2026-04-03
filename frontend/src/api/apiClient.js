@@ -140,6 +140,42 @@ export async function getCompanyNews(symbol, days = 7) {
   }
 }
 
+// ─── Auth ────────────────────────────────────────────────────────────────────
+export async function login(email, password) {
+  const data = await apiFetch('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+  if (data.token) localStorage.setItem('sq_token', data.token);
+  return data;
+}
+
+export async function register(username, email, password) {
+  const data = await apiFetch('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ username, email, password }),
+  });
+  if (data.token) localStorage.setItem('sq_token', data.token);
+  return data;
+}
+
+export async function getCurrentUser() {
+  const token = localStorage.getItem('sq_token');
+  if (!token) return null;
+  try {
+    return await apiFetch('/auth/me', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  } catch {
+    localStorage.removeItem('sq_token');
+    return null;
+  }
+}
+
+export function logout() {
+  localStorage.removeItem('sq_token');
+}
+
 // ─── Engines ─────────────────────────────────────────── (optional — use for server-side calculations)
 export async function engineCalculateOutcome(params) {
   return await apiFetch('/engine/outcome', { method: 'POST', body: JSON.stringify(params) });

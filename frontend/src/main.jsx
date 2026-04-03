@@ -6,6 +6,7 @@ import { GamificationProvider } from './context/GamificationContext';
 import { PortfolioProvider } from './context/PortfolioContext';
 import { CrowdIntelligenceProvider } from './context/CrowdIntelligenceContext';
 import { StockDataProvider } from './context/StockDataContext';
+import { AuthProvider } from './context/AuthContext';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -15,7 +16,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <PortfolioProvider>
           <StockDataProvider>
             <CrowdIntelligenceProvider>
-              <App />
+              <AuthProvider>
+                <App />
+              </AuthProvider>
             </CrowdIntelligenceProvider>
           </StockDataProvider>
         </PortfolioProvider>

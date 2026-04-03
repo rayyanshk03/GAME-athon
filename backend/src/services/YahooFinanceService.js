@@ -103,46 +103,31 @@ function daysToRange(days) {
 
 // ── Internal fetch helper with retry across hosts ─────────────────────────────
 /**
- * Try query1 first (with crumb); fall back to query2 if it fails.
- * Both attempts share the same path+query string.
+ * Try query2 first; fall back to query1 if it fails.
+ * We bypass the crumb/cookie requirements since Yahoo Finance currently
+ * allows /v8/finance/chart and /v1/finance/search without them.
  */
 async function yFetch(path, extraParams = {}) {
-  await ensureCrumb();
-
   const params = new URLSearchParams(extraParams);
-  if (_crumb) params.set('crumb', _crumb);
-  const qs = params.toString() ? `&${params.toString()}` : '';
+  const qsString = params.toString();
+  const qs = qsString ? (path.includes('?') ? `&${qsString}` : `?${qsString}`) : '';
 
   const buildUrl = (host) => `https://${host}.finance.yahoo.com${path}${qs}`;
 
-  const headers = {
-    ...BASE_HEADERS,
-    ..._cookie ? { Cookie: _cookie } : {},
-  };
-
-  // ── Attempt 1: query1 ──────────────────────────────────────────────────────
-  for (const host of ['query1', 'query2']) {
+  for (const host of ['query2', 'query1']) {
     try {
       const url = buildUrl(host);
       const res = await fetch(url, {
-        headers,
+        headers: BASE_HEADERS,
         signal: AbortSignal.timeout(12000), // 12s per attempt
       });
 
       if (res.ok) return await res.json();
 
-      // 401 → crumb is stale, force-refresh and retry once on query2
-      if (res.status === 401 && host === 'query1') {
-        _crumb = null;
-        _cookie = null;
-        _crumbFetchedAt = 0;
-        continue;
-      }
-
       throw new Error(`Yahoo Finance HTTP ${res.status} from ${host}`);
     } catch (err) {
-      if (host === 'query2') throw err; // both failed → propagate
-      console.warn(`[Yahoo] ${host} failed (${err.message}), trying query2…`);
+      if (host === 'query1') throw err; // both failed → propagate
+      console.warn(`[Yahoo] ${host} failed (${err.message}), trying query1…`);
     }
   }
 }

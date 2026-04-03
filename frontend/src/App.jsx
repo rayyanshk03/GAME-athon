@@ -12,9 +12,17 @@ import HallOfFame from './components/HallOfFame';
 import SocialHub from './components/SocialHub';
 import AIChatBot from './components/AIChatBot';
 import OutcomeNotification from './components/OutcomeNotification';
+import AuthPage from './components/AuthPage';
+import { AuthContext } from './context/AuthContext';
+import { useContext } from 'react';
 
 export default function App() {
+  const { isAuthenticated } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  if (!isAuthenticated) {
+    return <AuthPage />;
+  }
 
   return (
     <div className="app-root">

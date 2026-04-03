@@ -5,12 +5,14 @@
 const express = require('express');
 const cors    = require('cors');
 require('dotenv').config();
+const { connectDB } = require('./db');
 
 const storageRoutes  = require('./routes/storage');
 const aiRoutes       = require('./routes/ai');
 const stockRoutes    = require('./routes/stocks');
 const engineRoutes   = require('./routes/engines');
 const finnhubRoutes  = require('./routes/finnhub');
+const userRoutes     = require('./routes/users');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -25,11 +27,15 @@ app.use('/api/ai',       aiRoutes);        // POST /api/ai/explain | /tip | /cha
 app.use('/api/stocks',   stockRoutes);     // GET /api/stocks | /:symbol | /:symbol/history | /:symbol/news
 app.use('/api/engine',   engineRoutes);    // POST /api/engine/outcome | /validate-bet | /backtest | etc.
 app.use('/api/finnhub',  finnhubRoutes);   // GET /api/finnhub/quote | /candles | /news | /ws-token
+app.use('/api/users',    userRoutes);      // POST /api/users/signup | /login | PATCH /:id/points | GET /leaderboard
 
 // ── Health check ───────────────────────────────────────────────
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', version: '1.0.0' }));
 
 // ── Start ──────────────────────────────────────────────────────
+// Initialize MongoDB connection
+connectDB();
+
 const server = app.listen(PORT, () => {
   console.log(`⚡ StockQuest API running at http://localhost:${PORT}`);
   console.log(`   Market data: ✅ Yahoo Finance (free, no key needed)`);
@@ -62,3 +68,5 @@ server.on('error', (e) => {
 // Graceful shutdown
 process.on('SIGTERM', () => { server.close(); process.exit(0); });
 process.on('SIGINT', () => { server.close(); process.exit(0); });
+
+

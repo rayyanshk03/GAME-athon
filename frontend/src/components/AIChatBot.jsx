@@ -14,24 +14,33 @@ const QUICK = [
 
 export default function AIChatBot({ inline = false }) {
   const [open, setOpen]         = useState(inline ? true : false);
-  const [messages, setMessages] = useState([{ role: 'ai', text: '👋 Hi! I\'m FINBOT, your StockQuest trading tutor. Ask me anything about trading!' }]);
-  const [input, setInput]       = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [messages, setMessages] = useState([
+    { role: 'ai', text: "Hi! I'm FINBOT, your StockQuest trading tutor. Ask me anything about trading!" },
+  ]);
+  const [input, setInput]   = useState('');
+  const [loading, setLoading] = useState(false);
   const endRef = useRef(null);
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   async function send(q) {
     const question = q || input.trim();
     if (!question || loading) return;
     setInput('');
-    setMessages(m => [...m, { role: 'user', text: question }]);
+
+    // Build updated message list with user's message appended
+    const newMessages = [...messages, { role: 'user', text: question }];
+    setMessages(newMessages);
     setLoading(true);
+
     try {
-      const ans = await answerTradingQuestion(question);
-      setMessages(m => [...m, { role: 'ai', text: ans }]);
+      // Pass full conversation history so Groq has context for follow-ups
+      const ans = await answerTradingQuestion(newMessages);
+      setMessages(prev => [...prev, { role: 'ai', text: ans }]);
     } catch (e) {
-      setMessages(m => [...m, { role: 'ai', text: `⚠️ ${e.message}` }]);
+      setMessages(prev => [...prev, { role: 'ai', text: `Error: ${e.message}` }]);
     }
     setLoading(false);
   }
@@ -45,12 +54,23 @@ export default function AIChatBot({ inline = false }) {
     <div
       className="chatbot-window"
       id="chatbot-window"
-      style={inline ? { position: 'relative', bottom: 'auto', right: 'auto', width: '100%', maxWidth: '100%', boxShadow: 'none', borderRadius: '12px' } : {}}
+      style={inline ? {
+        position: 'relative',
+        bottom: 'auto',
+        right: 'auto',
+        width: '100%',
+        maxWidth: '100%',
+        boxShadow: 'none',
+        borderRadius: '12px',
+      } : {}}
     >
       <div className="chatbot-header">
         <span>FINBOT — AI Trading Tutor</span>
-        {!inline && <button onClick={() => setOpen(false)}>✕</button>}
+        {!inline && (
+          <button onClick={() => setOpen(false)}>✕</button>
+        )}
       </div>
+
       <div className="chatbot-messages">
         {messages.map((m, i) => (
           <div key={i} className={`chat-msg ${m.role}`}>{m.text}</div>
@@ -58,9 +78,13 @@ export default function AIChatBot({ inline = false }) {
         {loading && <div className="chat-msg ai typing">Thinking…</div>}
         <div ref={endRef} />
       </div>
+
       <div className="quick-replies">
-        {QUICK.map(q => <button key={q} className="quick-btn" onClick={() => send(q)}>{q}</button>)}
+        {QUICK.map(q => (
+          <button key={q} className="quick-btn" onClick={() => send(q)}>{q}</button>
+        ))}
       </div>
+
       <form onSubmit={onSubmit} className="chatbot-input-row">
         <input
           id="chatbot-input"

@@ -5,10 +5,12 @@
 
 export function calculateOutcome(entryPrice, exitPrice, stake, multiplier = 1, direction = 'up') {
   const percentMove = ((exitPrice - entryPrice) / entryPrice) * 100;
-  const won = direction === 'up' ? exitPrice > entryPrice : exitPrice < entryPrice;
-  const rawDelta = stake * (Math.abs(percentMove) / 100) * multiplier;
+  // Support both 'buy'/'up' for long and 'sell'/'down' for short
+  const isLong = direction === 'up' || direction === 'buy';
+  const won = isLong ? exitPrice > entryPrice : exitPrice < entryPrice;
+  const rawDelta = stake * (Math.abs(percentMove) / 100) * (multiplier || 1);
   const pointDelta = won ? Math.round(rawDelta) : -Math.min(stake, Math.round(rawDelta));
-  return { pointDelta, percentMove, won };
+  return { pointDelta: isNaN(pointDelta) ? 0 : pointDelta, percentMove, won };
 }
 
 export function resolveTimedBet(bet, currentPrice) {

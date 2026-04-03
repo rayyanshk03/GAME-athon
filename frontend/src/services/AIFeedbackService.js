@@ -2,9 +2,15 @@ export const getFallback = () => {
   return "💡 Great question! Combine the chart, RSI/trend signals, and Crowd+AI score before placing a bet. Check the Learning Hub for deeper lessons.";
 };
 
-export const callGroq = async (prompt) => {
+export const callGroq = async (history = []) => {
   const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY?.trim();
   if (!GROQ_API_KEY) return getFallback();
+
+  // Map roles for Groq: 'ai' -> 'assistant', 'user' -> 'user'
+  const formattedMessages = history.map(m => ({
+    role: m.role === 'ai' ? 'assistant' : 'user',
+    content: m.text,
+  }));
 
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
@@ -17,9 +23,10 @@ export const callGroq = async (prompt) => {
       messages: [
         {
           role: 'system',
-          content: 'You are FINBOT, a helpful and friendly stock market tutor for beginner traders. Keep answers concise, educational, and encouraging. Respond in 2-4 sentences max.',
+          content:
+            'You are FINBOT, a helpful and friendly stock market tutor for beginner traders. Keep answers concise, educational, and encouraging. Respond in 2-4 sentences max. Refer to past messages in the conversation if necessary.',
         },
-        { role: 'user', content: prompt },
+        ...formattedMessages,
       ],
       temperature: 0.5,
       max_tokens: 300,
@@ -39,9 +46,9 @@ export const callGroq = async (prompt) => {
   }
 };
 
-export const answerTradingQuestion = async (question) => {
+export const answerTradingQuestion = async (history) => {
   try {
-    return await callGroq(question);
+    return await callGroq(history);
   } catch (e) {
     console.error('[AIFeedbackService] Error:', e.message);
     throw e;

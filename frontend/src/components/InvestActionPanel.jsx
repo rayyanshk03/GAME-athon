@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useGamification } from '../context/GamificationContext';
 import { usePortfolio } from '../context/PortfolioContext';
 import { useCrowd } from '../context/CrowdIntelligenceContext';
-import { calculateOutcome, rollDoubleOrNothing } from '../utils/engines/OutcomeEngine';
+import { calculateOutcome, rollDoubleOrNothing, resolveTimedBet } from '../utils/engines/OutcomeEngine';
 import { useData } from '../context/StockDataContext';
 import { getStockInsight } from '../api/apiClient';
 
@@ -65,6 +65,7 @@ export default function InvestActionPanel({ rsi, trend }) {
       stake: Number(stake),
       direction,
       duration,
+      multiplier: 1,
       entryPrice: currentStock.price,
       rsiAtEntry: rsi,
       trendAtEntry: trend,
@@ -73,6 +74,23 @@ export default function InvestActionPanel({ rsi, trend }) {
     addPendingBet(payload);
     setStake('');
   }
+
+  // ── Auto-resolve expired bets every 30 seconds ──────────────────────────────
+  useEffect(() => {
+    if (!activeBets.length || !currentStock) return;
+    const timer = setInterval(() => {
+      activeBets.forEach(bet => {
+        const result = resolveTimedBet(bet, currentStock.price);
+        if (result.resolved) {
+          const { pointDelta, won } = result;
+          resolveBet({ betId: bet.id, pointDelta, won, symbol: bet.symbol, multiplier: bet.multiplier || 1, exitPrice: currentStock.price });
+          resolvePendingBet({ betId: bet.id, pointDelta, won, exitPrice: currentStock.price });
+          if (won) setDnMode({ bet, pointDelta });
+        }
+      });
+    }, 30_000); // check every 30 seconds
+    return () => clearInterval(timer);
+  }, [activeBets, currentStock, resolveBet, resolvePendingBet]);
 
   function handleSimResolve(bet) {
     const move = currentStock.price * (Math.random() * 0.1 - 0.05);

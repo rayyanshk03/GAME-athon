@@ -21,7 +21,7 @@ export default function InvestActionPanel({ rsi, trend }) {
   const { stocks, selectedSymbol, setSelectedSymbol, history } = useData();
 
   const [stake, setStake] = useState('');
-  const [direction, setDirection] = useState('up');
+  const [direction, setDirection] = useState('buy');
   const [duration, setDuration] = useState('1h');
   const [error, setError] = useState('');
   const [dnMode, setDnMode] = useState(null);
@@ -138,7 +138,7 @@ export default function InvestActionPanel({ rsi, trend }) {
 
   return (
     <div className="panel invest-panel" id="invest-action-panel">
-      <h2 className="panel-title">💰 Place Your Bet</h2>
+      <h2 className="panel-title">Place Your Bet</h2>
 
       <div className="form-group">
         <label>Stock</label>
@@ -151,7 +151,7 @@ export default function InvestActionPanel({ rsi, trend }) {
 
       <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 8, padding: '10px', marginBottom: '15px' }}>
         <h4 style={{ margin: '0 0 5px 0', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px', color: '#e2e8f0' }}>
-          🧠 AI Quick Insight
+          AI Quick Insight
           {insightLoading && <span className="spinner" style={{ width: 10, height: 10, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />}
         </h4>
         <p style={{ margin: 0, fontSize: '12px', color: '#93c5fd', minHeight: '36px', lineHeight: 1.4 }}>
@@ -160,8 +160,8 @@ export default function InvestActionPanel({ rsi, trend }) {
       </div>
 
       <div className="form-group direction-row">
-        <button id="btn-up" type="button" className={`dir-btn up   ${direction === 'up' ? 'active' : ''}`} onClick={() => setDirection('up')}>  📈 Up   </button>
-        <button id="btn-down" type="button" className={`dir-btn down ${direction === 'down' ? 'active' : ''}`} onClick={() => setDirection('down')}>📉 Down</button>
+        <button id="btn-buy" type="button" className={`dir-btn up   ${direction === 'buy' ? 'active' : ''}`} onClick={() => setDirection('buy')}>  📈 Buy   </button>
+        <button id="btn-sell" type="button" className={`dir-btn down ${direction === 'sell' ? 'active' : ''}`} onClick={() => setDirection('sell')}>📉 Sell</button>
       </div>
 
       <div className="form-group">
@@ -183,7 +183,7 @@ export default function InvestActionPanel({ rsi, trend }) {
 
       {error && <p className="form-error">{error}</p>}
       <button id="place-bet-btn" type="button" className="btn-primary" onClick={handlePlace} disabled={!stake || points < 10}>
-        Place Bet 🚀
+        Place Bet 
       </button>
 
       {activeBets.length > 0 && (
@@ -193,7 +193,7 @@ export default function InvestActionPanel({ rsi, trend }) {
             <div key={bet.id} className="bet-card">
               <div className="bet-card-row"><strong>{bet.symbol}</strong> <span className="muted">{formatTime(bet.placedAt)}</span></div>
               <div className="bet-card-row">
-                <span className={`bet-dir ${bet.direction}`}>{bet.direction === 'up' ? '📈' : '📉'} {bet.direction}</span>
+                <span className={`bet-dir ${bet.direction}`}>{bet.direction === 'buy' ? '📈' : '📉'} {bet.direction}</span>
                 <span>{bet.stake} pts · {bet.duration}</span>
               </div>
               <div className="bet-card-row muted" style={{ fontSize: 12 }}>Entry ${Number(bet.entryPrice).toFixed(2)} · RSI {bet.rsiAtEntry ?? '—'} · Trend {bet.trendAtEntry ?? '—'}</div>
@@ -206,10 +206,10 @@ export default function InvestActionPanel({ rsi, trend }) {
       {dnMode && (
         <div className="don-modal">
           <div className="don-card">
-            <h3>🎰 Double-or-Nothing?</h3>
+            <h3>Double-or-Nothing?</h3>
             <p>You won <strong>+{dnMode.pointDelta} pts</strong>. Risk it all to double?</p>
             <div className="don-actions">
-              <button id="don-yes" type="button" className="btn-primary" onClick={handleDoubleOrNothing}>🎲 Roll the Dice</button>
+              <button id="don-yes" type="button" className="btn-primary" onClick={handleDoubleOrNothing}> Roll the Dice</button>
               <button id="don-no" type="button" className="btn-ghost" onClick={() => setDnMode(null)}>Keep My Points</button>
             </div>
           </div>

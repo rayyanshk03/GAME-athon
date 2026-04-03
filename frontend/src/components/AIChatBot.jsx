@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { askChatbot } from '../api/apiClient';
+import { answerTradingQuestion } from '../services/AIFeedbackService';
 
 const QUICK = [
   'What is RSI?',
@@ -12,11 +12,11 @@ const QUICK = [
   'What are ETFs?',
 ];
 
-export default function AIChatBot() {
-  const [open, setOpen]       = useState(false);
-  const [messages, setMessages] = useState([{ role: 'ai', text: '👋 Hi! I\'m your StockQuest AI tutor. Ask me anything about trading!' }]);
-  const [input, setInput]     = useState('');
-  const [loading, setLoading] = useState(false);
+export default function AIChatBot({ inline = false }) {
+  const [open, setOpen]         = useState(inline ? true : false);
+  const [messages, setMessages] = useState([{ role: 'ai', text: '👋 Hi! I\'m FINBOT, your StockQuest trading tutor. Ask me anything about trading!' }]);
+  const [input, setInput]       = useState('');
+  const [loading, setLoading]   = useState(false);
   const endRef = useRef(null);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -28,7 +28,7 @@ export default function AIChatBot() {
     setMessages(m => [...m, { role: 'user', text: question }]);
     setLoading(true);
     try {
-      const ans = await askChatbot(question);
+      const ans = await answerTradingQuestion(question);
       setMessages(m => [...m, { role: 'ai', text: ans }]);
     } catch (e) {
       setMessages(m => [...m, { role: 'ai', text: `⚠️ ${e.message}` }]);
@@ -36,36 +36,56 @@ export default function AIChatBot() {
     setLoading(false);
   }
 
+  const onSubmit = (e) => {
+    e.preventDefault();
+    send();
+  };
+
+  const chatWindow = (
+    <div
+      className="chatbot-window"
+      id="chatbot-window"
+      style={inline ? { position: 'relative', bottom: 'auto', right: 'auto', width: '100%', maxWidth: '100%', boxShadow: 'none', borderRadius: '12px' } : {}}
+    >
+      <div className="chatbot-header">
+        <span>FINBOT — AI Trading Tutor</span>
+        {!inline && <button onClick={() => setOpen(false)}>✕</button>}
+      </div>
+      <div className="chatbot-messages">
+        {messages.map((m, i) => (
+          <div key={i} className={`chat-msg ${m.role}`}>{m.text}</div>
+        ))}
+        {loading && <div className="chat-msg ai typing">Thinking…</div>}
+        <div ref={endRef} />
+      </div>
+      <div className="quick-replies">
+        {QUICK.map(q => <button key={q} className="quick-btn" onClick={() => send(q)}>{q}</button>)}
+      </div>
+      <form onSubmit={onSubmit} className="chatbot-input-row">
+        <input
+          id="chatbot-input"
+          className="chatbot-input"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder="Ask anything about trading…"
+        />
+        <button id="chatbot-send" type="submit" className="btn-primary">Send</button>
+      </form>
+    </div>
+  );
+
+  if (inline) return chatWindow;
+
   return (
     <>
-      <button id="chatbot-fab" className={`chatbot-fab ${open ? 'open' : ''}`} onClick={() => setOpen(o => !o)}>
-        {open ? '✕' : '🤖'}
+      <button
+        id="chatbot-fab"
+        className={`chatbot-fab ${open ? 'open' : ''}`}
+        onClick={() => setOpen(o => !o)}
+      >
+        {open ? '✕' : '💬'}
       </button>
-      {open && (
-        <div className="chatbot-window" id="chatbot-window">
-          <div className="chatbot-header">
-            <span>🤖 AI Tutor</span>
-            <button onClick={() => setOpen(false)}>✕</button>
-          </div>
-          <div className="chatbot-messages">
-            {messages.map((m, i) => (
-              <div key={i} className={`chat-msg ${m.role}`}>{m.text}</div>
-            ))}
-            {loading && <div className="chat-msg ai typing">🧠 Thinking…</div>}
-            <div ref={endRef} />
-          </div>
-          <div className="quick-replies">
-            {QUICK.map(q => <button key={q} className="quick-btn" onClick={() => send(q)}>{q}</button>)}
-          </div>
-          <div className="chatbot-input-row">
-            <input id="chatbot-input" className="chatbot-input" value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && send()}
-              placeholder="Ask anything about trading…" />
-            <button id="chatbot-send" className="btn-primary" onClick={() => send()}>Send</button>
-          </div>
-        </div>
-      )}
+      {open && chatWindow}
     </>
   );
 }

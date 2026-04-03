@@ -2,7 +2,7 @@ import { useData } from '../context/StockDataContext';
 import InvestActionPanel from './InvestActionPanel';
 import { useCrowd } from '../context/CrowdIntelligenceContext';
 import SentimentPanel from './SentimentPanel';
-import AIInsightsPanel from './AIInsightsPanel';
+import AIChatBot from './AIChatBot';
 import PriceChart from './PriceChart';
 
 function computeRSI(data, period = 14) {
@@ -149,7 +149,7 @@ export default function StockDashboard() {
       {/* Module C - Core UI bottom row */}
       <div className="two-col" style={{ marginTop: '1.5rem' }}>
         <SentimentPanel symbol={selectedSymbol} />
-        <AIInsightsPanel />
+        <AIChatBot inline={true} />
       </div>
 
     </div>

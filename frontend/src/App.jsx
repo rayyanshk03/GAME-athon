@@ -16,12 +16,14 @@ import AIChatBot from './components/AIChatBot';
 import OutcomeNotification from './components/OutcomeNotification';
 import VirtualPortfolio from './components/VirtualPortfolio';
 import LoginPage from './components/LoginPage';
+import TradingViewChart from './components/TradingViewChart';
 import { getCurrentUser, logout } from './api/apiClient';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab]   = useState('dashboard');
+  const [user, setUser]             = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [tvSymbol, setTvSymbol]     = useState('NSE:RELIANCE');
 
   useEffect(() => {
     async function initAuth() {
@@ -56,9 +58,18 @@ export default function App() {
 
   return (
     <div className="app-root">
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={handleLogout} />
+      <Header
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        user={user}
+        onLogout={handleLogout}
+        tvSymbol={tvSymbol}
+        onSymbolChange={setTvSymbol}
+      />
       <main className="app-main">
-        {activeTab === 'dashboard' && <StockDashboard />}
+        {activeTab === 'dashboard' && (
+          <StockDashboard tvSymbol={tvSymbol} onTvSymbolChange={setTvSymbol} />
+        )}
         {activeTab === 'virtual'   && <VirtualPortfolio />}
         {activeTab === 'portfolio' && (
           <div className="two-col">

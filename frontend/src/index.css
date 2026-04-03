@@ -1024,3 +1024,112 @@ select:focus, input:focus { border-color: var(--primary); outline: none; }
     padding: 1.5rem;
   }
 }
+
+/* ── TradingView Symbol Search Bar ────────────────────── */
+.tv-symbol-search {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 0 .25rem 0 .6rem;
+  transition: border-color .2s, box-shadow .2s;
+  min-width: 220px;
+  max-width: 300px;
+}
+.tv-symbol-search:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+.tv-search-icon {
+  font-size: .85rem;
+  color: var(--muted);
+  flex-shrink: 0;
+  pointer-events: none;
+  margin-right: .25rem;
+}
+.tv-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: .82rem;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .03em;
+  padding: .45rem .25rem;
+  width: 100%;
+  text-transform: uppercase;
+}
+.tv-search-input::placeholder {
+  color: var(--muted);
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  font-family: 'JetBrains Mono', monospace;
+}
+.tv-search-btn {
+  background: rgba(59,130,246,0.2);
+  border: none;
+  border-radius: 7px;
+  color: var(--primary);
+  font-size: .75rem;
+  font-weight: 700;
+  padding: .3rem .65rem;
+  cursor: pointer;
+  transition: all .15s;
+  flex-shrink: 0;
+  margin: 3px;
+}
+.tv-search-btn:hover {
+  background: rgba(59,130,246,0.35);
+  color: #fff;
+}
+
+/* ── TradingView Chart Wrapper ─────────────────────────── */
+.tv-chart-wrapper {
+  padding: 1rem 1.25rem 1.25rem;
+}
+.tv-chart-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .75rem;
+}
+.tv-chart-symbol {
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  letter-spacing: .04em;
+}
+.tv-chart-badge {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--success);
+  background: rgba(16,185,129,0.1);
+  border: 1px solid rgba(16,185,129,0.25);
+  padding: .2rem .6rem;
+  border-radius: 20px;
+}
+.tv-chart-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+  animation: live-blink 1s infinite;
+  display: inline-block;
+}
+
+@media (max-width: 768px) {
+  .tv-symbol-search { min-width: 140px; max-width: 180px; }
+  .tv-search-btn { display: none; }
+}

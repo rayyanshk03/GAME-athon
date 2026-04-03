@@ -3,7 +3,7 @@ import InvestActionPanel from './InvestActionPanel';
 import { useCrowd } from '../context/CrowdIntelligenceContext';
 import SentimentPanel from './SentimentPanel';
 import AIInsightsPanel from './AIInsightsPanel';
-import PriceChart from './PriceChart';
+import TradingViewChart from './TradingViewChart';
 
 function computeRSI(data, period = 14) {
   if (!data || data.length < period + 1) return null;
@@ -13,7 +13,7 @@ function computeRSI(data, period = 14) {
     const d = slice[i].price - slice[i - 1].price;
     if (d > 0) gains += d; else losses -= d;
   }
-  const rs  = gains / (losses || 0.001);
+  const rs = gains / (losses || 0.001);
   return Math.round(100 - 100 / (1 + rs));
 }
 
@@ -23,7 +23,18 @@ function computeMA(data, period = 20) {
   return Math.round((slice.reduce((s, d) => s + d.price, 0) / period) * 100) / 100;
 }
 
-export default function StockDashboard() {
+// Map backend symbol → TradingView NSE symbol
+// Backend symbols from Yahoo Finance look like RELIANCE.NS, TCS.NS etc.
+// TradingView expects NSE:RELIANCE, NSE:TCS etc.
+function toTVSymbol(sym) {
+  if (!sym) return 'NSE:RELIANCE';
+  if (sym.includes(':')) return sym; // already a full TV symbol (e.g. from navbar search)
+  // Strip common Yahoo Finance exchange suffixes
+  const clean = sym.replace(/\.(NS|BO|BSE|L|AX|TO|HK|SI|KS)$/i, '');
+  return `NSE:${clean}`;
+}
+
+export default function StockDashboard({ tvSymbol, onTvSymbolChange }) {
   const {
     stocks,
     loading,
@@ -31,10 +42,6 @@ export default function StockDashboard() {
     selectedSymbol,
     setSelectedSymbol,
     history,
-    historyDays,
-    setHistoryDays,
-    historyLoading,
-    historyError,
   } = useData();
   const { getHybridScore } = useCrowd();
 
@@ -43,8 +50,8 @@ export default function StockDashboard() {
       <div className="dashboard-page" style={{ padding: '20px' }}>
         <div className="skeleton-line" style={{ width: '100%', height: '40px', marginBottom: '20px', borderRadius: '4px' }}></div>
         <div className="dashboard-grid">
-          <div className="skeleton-box" style={{ width: '100%', height: '350px', borderRadius: '8px' }}></div>
-          <div className="skeleton-box" style={{ width: '100%', height: '350px', borderRadius: '8px' }}></div>
+          <div className="skeleton-box" style={{ width: '100%', height: '500px', borderRadius: '8px' }}></div>
+          <div className="skeleton-box" style={{ width: '100%', height: '500px', borderRadius: '8px' }}></div>
         </div>
       </div>
     );
@@ -57,39 +64,33 @@ export default function StockDashboard() {
   const stock = stocks.find(s => s.symbol === selectedSymbol) || stocks[0];
   if (!stock) return null;
 
-  const rsi     = computeRSI(history);
-  const ma20    = computeMA(history, 20);
-  const ma50    = computeMA(history, 50);
-  const trend   = ma20 != null && ma50 != null ? (ma20 > ma50 ? 'Uptrend' : 'Downtrend') : null;
-  const score   = getHybridScore(selectedSymbol || stock.symbol);
+  const rsi   = computeRSI(history);
+  const ma20  = computeMA(history, 20);
+  const ma50  = computeMA(history, 50);
+  const trend = ma20 != null && ma50 != null ? (ma20 > ma50 ? 'Uptrend' : 'Downtrend') : null;
+  const score = getHybridScore(selectedSymbol || stock.symbol);
 
-  // Build OHLCV data for TradingView chart — derive candle from history if no real OHLCV
-  const chartData = history
-    .filter(h => h.time)
-    .map(h => {
-      // lightweight-charts handles Unix timestamps (seconds) natively, which
-      // correctly preserves the intrinsic time distance between intraday points.
-      const timestampSecs = Math.floor(new Date(h.time).getTime() / 1000) - new Date().getTimezoneOffset() * 60;
-      return {
-        time: timestampSecs,
-        open:  h.open  ?? h.price,
-        high:  h.high  ?? h.price * 1.005,
-        low:   h.low   ?? h.price * 0.995,
-        close: h.close ?? h.price,
-        value: h.volume ?? 0,
-      };
-    })
-    .sort((a, b) => a.time - b.time) // lightweight-charts requires strictly ascending time
-    .filter((d, i, arr) => i === 0 || d.time > arr[i - 1].time); // Remove exact duplicates
+  // Derive the TV symbol: prefer the prop from navbar search, fall back to selected ticker
+  const activeTVSymbol = tvSymbol || toTVSymbol(stock.symbol);
+
+  function handleTickerClick(sym) {
+    setSelectedSymbol(sym);
+    const tv = toTVSymbol(sym);
+    onTvSymbolChange?.(tv);
+  }
 
   return (
     <div className="dashboard-page" id="stock-dashboard">
-      {/* Stock bar */}
+
+      {/* ── Stock ticker bar ── */}
       <div className="stock-ticker">
         {stocks.map(s => (
-          <button key={s.symbol} id={`ticker-${s.symbol}`}
+          <button
+            key={s.symbol}
+            id={`ticker-${s.symbol}`}
             className={`ticker-item ${selectedSymbol === s.symbol ? 'active' : ''}`}
-            onClick={() => setSelectedSymbol(s.symbol)}>
+            onClick={() => handleTickerClick(s.symbol)}
+          >
             <span className="ticker-sym">{s.symbol}</span>
             <span className="ticker-price">${Number(s.price).toFixed(2)}</span>
             <span className={`ticker-chg ${Number(s.changePercent) >= 0 ? 'up' : 'down'}`}>
@@ -100,11 +101,16 @@ export default function StockDashboard() {
       </div>
 
       <div className="dashboard-grid">
-        {/* Chart */}
+
+        {/* ── Chart panel ── */}
         <div className="panel chart-main-panel">
+
+          {/* Stock name + price header */}
           <div className="chart-header">
             <div>
-              <h2 className="stock-name">{stock.name} <span className="stock-symbol">({stock.symbol})</span></h2>
+              <h2 className="stock-name">
+                {stock.name} <span className="stock-symbol">({stock.symbol})</span>
+              </h2>
               <div className="stock-price-display">
                 <span className="big-price">${Number(stock.price).toFixed(2)}</span>
                 <span className={`price-change ${Number(stock.changePercent) >= 0 ? 'up' : 'down'}`}>
@@ -112,20 +118,23 @@ export default function StockDashboard() {
                 </span>
               </div>
             </div>
+            <span className="tv-chart-badge" style={{ alignSelf: 'flex-start' }}>
+              TradingView · Live
+            </span>
           </div>
 
-          {/* TradingView Pro Chart — key forces full remount on stock change */}
-          <PriceChart
-            key={stock.symbol}
-            chartData={chartData}
-            stockName={stock.name}
-            symbol={stock.symbol}
-            historyDays={historyDays}
-            setHistoryDays={setHistoryDays}
-          />
+          {/* ── TradingView Full Widget (one chart at a time) ── */}
+          <div style={{ marginTop: '0.75rem' }}>
+            <TradingViewChart
+              key={activeTVSymbol}
+              symbol={activeTVSymbol}
+              theme="dark"
+              height={490}
+            />
+          </div>
 
-          {/* Indicators row */}
-          <div className="indicators-row">
+          {/* ── Indicator pills ── */}
+          <div className="indicators-row" style={{ marginTop: '0.75rem' }}>
             <div className={`indicator-pill rsi-pill ${rsi == null ? 'neutral' : rsi > 70 ? 'overbought' : rsi < 30 ? 'oversold' : 'neutral'}`}>
               RSI {rsi ?? '—'} {rsi == null ? '' : rsi > 70 ? '⚠️ Overbought' : rsi < 30 ? '🟢 Oversold' : '⚖️ Neutral'}
             </div>
@@ -145,11 +154,11 @@ export default function StockDashboard() {
           </div>
         </div>
 
-        {/* Invest panel */}
+        {/* ── Invest panel (unchanged) ── */}
         <InvestActionPanel rsi={rsi} trend={trend} />
       </div>
 
-      {/* Module C - Core UI bottom row */}
+      {/* ── Bottom row: Sentiment + AI Insights (unchanged) ── */}
       <div className="two-col" style={{ marginTop: '1.5rem' }}>
         <SentimentPanel symbol={selectedSymbol} />
         <AIInsightsPanel />

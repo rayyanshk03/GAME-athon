@@ -7,12 +7,12 @@ export default function Header({ activeTab, setActiveTab }) {
   const { theme, toggle } = useTheme();
 
   const tabs = [
-    { id: 'dashboard',  label: '📊 Dashboard'    },
-    { id: 'portfolio',  label: '💼 Portfolio'     },
-    { id: 'ai',         label: '🤖 AI Insights'  },
-    { id: 'learning',   label: '📚 Learning'      },
-    { id: 'crowd',      label: '🌐 Crowd Intel'   },
-    { id: 'rewards',    label: '🏆 Rewards'       },
+    { id: 'dashboard',  label: 'Dashboard'    },
+    { id: 'portfolio',  label: 'Portfolio'     },
+    { id: 'ai',         label: 'AI Insights'  },
+    { id: 'learning',   label: 'Learning'      },
+    { id: 'crowd',      label: 'Crowd Intel'   },
+    { id: 'rewards',    label: 'Rewards'       },
   ];
 
   return (

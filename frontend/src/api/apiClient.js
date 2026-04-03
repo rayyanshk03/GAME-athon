@@ -118,6 +118,24 @@ export async function getRecommendations(heldSymbols, available) {
   }
 }
 
+export async function getRealSentiment(articles, symbol) {
+  try {
+    const { sentiments } = await apiFetch('/ai/sentiment', { method: 'POST', body: JSON.stringify({ articles, symbol }) });
+    return sentiments;
+  } catch {
+    return [];
+  }
+}
+
+export async function getStockInsight(symbol, data) {
+  try {
+    const { text } = await apiFetch('/ai/insight', { method: 'POST', body: JSON.stringify({ symbol, ...data }) });
+    return text;
+  } catch {
+    return '⚖️ Mixed technicals. Wait for a clearer momentum shift before taking a large position.';
+  }
+}
+
 // ─── Stocks ───────────────────────────────────────────────────────────────────
 export async function fetchAllStocks() {
   return await apiFetch('/stocks');
@@ -130,6 +148,15 @@ export async function fetchStock(symbol) {
 export async function fetchStockHistory(symbol, days = 7) {
   const data = await apiFetch(`/stocks/${symbol}/history?days=${days}`);
   return data.history ?? data;
+}
+
+export async function getRealExitPrice(symbol, exitAtMs) {
+  try {
+    const { price } = await apiFetch(`/stocks/${symbol}/price-at?exitAt=${exitAtMs}`);
+    return typeof price === 'number' ? price : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getCompanyNews(symbol, days = 7) {

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGamification } from '../context/GamificationContext';
 import { usePortfolio } from '../context/PortfolioContext';
 import { useCrowd } from '../context/CrowdIntelligenceContext';
 import { calculateOutcome, rollDoubleOrNothing } from '../utils/engines/OutcomeEngine';
 import { useData } from '../context/StockDataContext';
+import { getStockInsight, getRealExitPrice } from '../api/apiClient';
 
 function formatTime(ts) {
   try {
@@ -21,13 +22,39 @@ export default function InvestActionPanel({ rsi, trend }) {
 
   const [stake, setStake]         = useState('');
   const [direction, setDirection] = useState('up');
-  const [multiplier, setMultiplier] = useState(1);
   const [duration, setDuration]   = useState('1h');
   const [error, setError]         = useState('');
   const [dnMode, setDnMode]       = useState(null);
+  const [insight, setInsight]     = useState('');
+  const [insightLoading, setInsightLoading] = useState(false);
+  const [resolvingBets, setResolvingBets]   = useState(new Set());
 
-  const maxMul = simMode === 'beginner' ? 1 : 3;
+  /** Map bet duration string → milliseconds, used to calculate real exit time */
+  const DURATION_MS = { '15m': 15 * 60 * 1000, '1h': 60 * 60 * 1000, '1d': 24 * 60 * 60 * 1000 };
+
   const currentStock = stocks.find(s => s.symbol === selectedSymbol) || stocks[0];
+
+  useEffect(() => {
+    if (!currentStock) return;
+    let isMounted = true;
+    const fetchInsight = async () => {
+      setInsightLoading(true);
+      setInsight('');
+      try {
+        const text = await getStockInsight(currentStock.symbol, {
+          price: currentStock.price,
+          trend: trend,
+          rsi: rsi
+        });
+        if (isMounted) setInsight(text);
+      } catch (err) {
+        if (isMounted) setInsight('Failed to load insight.');
+      }
+      if (isMounted) setInsightLoading(false);
+    };
+    fetchInsight();
+    return () => { isMounted = false; };
+  }, [currentStock?.symbol, currentStock?.price, trend, rsi]);
 
   function handlePlace() {
     const v = validate(Number(stake));
@@ -41,7 +68,6 @@ export default function InvestActionPanel({ rsi, trend }) {
       sector: currentStock.sector || 'General',
       stake: Number(stake),
       direction,
-      multiplier,
       duration,
       entryPrice: currentStock.price,
       rsiAtEntry: rsi,
@@ -52,13 +78,32 @@ export default function InvestActionPanel({ rsi, trend }) {
     setStake('');
   }
 
-  function handleSimResolve(bet) {
-    const move  = currentStock.price * (Math.random() * 0.1 - 0.05);
-    const exit  = Math.round((currentStock.price + move) * 100) / 100;
-    const { pointDelta, won } = calculateOutcome(bet.entryPrice, exit, bet.stake, bet.multiplier, bet.direction);
-    resolveBet({ betId: bet.id, pointDelta, won, symbol: bet.symbol, multiplier: bet.multiplier, exitPrice: exit });
-    resolvePendingBet({ betId: bet.id, pointDelta, won, exitPrice: exit });
-    if (won) setDnMode({ bet, pointDelta });
+  async function handleSimResolve(bet) {
+    // Mark this bet as resolving so UI can show a spinner
+    setResolvingBets(prev => new Set(prev).add(bet.id));
+
+    try {
+      // Calculate the real-world exit timestamp based on duration
+      const durationMs = DURATION_MS[bet.duration] ?? DURATION_MS['1h'];
+      const exitAtMs   = bet.placedAt + durationMs;
+
+      // Fetch the real Yahoo Finance price at that exit time
+      let exit = await getRealExitPrice(bet.symbol, exitAtMs);
+
+      // Fallback: use current live price if Yahoo can't find the exact candle
+      if (!exit || isNaN(exit)) {
+        exit = currentStock?.price ?? bet.entryPrice;
+      }
+      exit = Math.round(exit * 100) / 100;
+
+      const prevMul = bet.multiplier || 1;
+      const { pointDelta, won } = calculateOutcome(bet.entryPrice, exit, bet.stake, prevMul, bet.direction);
+      resolveBet({ betId: bet.id, pointDelta, won, symbol: bet.symbol, multiplier: prevMul, exitPrice: exit });
+      resolvePendingBet({ betId: bet.id, pointDelta, won, exitPrice: exit });
+      if (won) setDnMode({ bet, pointDelta });
+    } finally {
+      setResolvingBets(prev => { const s = new Set(prev); s.delete(bet.id); return s; });
+    }
   }
 
   function handleDoubleOrNothing() {
@@ -126,6 +171,16 @@ export default function InvestActionPanel({ rsi, trend }) {
 
       {renderCandlestick()}
 
+      <div style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 8, padding: '10px', marginBottom: '15px' }}>
+        <h4 style={{ margin: '0 0 5px 0', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px', color: '#e2e8f0' }}>
+          🧠 AI Quick Insight
+          {insightLoading && <span className="spinner" style={{ width: 10, height: 10, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />}
+        </h4>
+        <p style={{ margin: 0, fontSize: '12px', color: '#93c5fd', minHeight: '36px', lineHeight: 1.4 }}>
+          {insight || (insightLoading ? 'Loading insight...' : '')}
+        </p>
+      </div>
+
       <div className="form-group direction-row">
         <button id="btn-up"   type="button" className={`dir-btn up   ${direction === 'up'   ? 'active' : ''}`} onClick={() => setDirection('up')}>  📈 Up   </button>
         <button id="btn-down" type="button" className={`dir-btn down ${direction === 'down' ? 'active' : ''}`} onClick={() => setDirection('down')}>📉 Down</button>
@@ -137,17 +192,6 @@ export default function InvestActionPanel({ rsi, trend }) {
           onChange={e => setStake(e.target.value)} placeholder="Enter points..." />
       </div>
 
-      <div className="form-group">
-        <label>Risk multiplier</label>
-        <div className="multiplier-row">
-          {[1, 2, 3].map(m => (
-            <button key={m} type="button" id={`mul-${m}x`}
-              className={`mul-btn ${multiplier === m ? 'active' : ''} ${m > maxMul ? 'disabled' : ''}`}
-              onClick={() => m <= maxMul && setMultiplier(m)}>{m}x</button>
-          ))}
-        </div>
-        <p style={{ fontSize: '11px', color: 'var(--muted)', marginTop: 6 }}>Higher multiplier increases win/loss size on resolve.</p>
-      </div>
 
       <div className="form-group">
         <label>Bet duration (tracked on ticket)</label>
@@ -172,7 +216,7 @@ export default function InvestActionPanel({ rsi, trend }) {
               <div className="bet-card-row"><strong>{bet.symbol}</strong> <span className="muted">{formatTime(bet.placedAt)}</span></div>
               <div className="bet-card-row">
                 <span className={`bet-dir ${bet.direction}`}>{bet.direction === 'up' ? '📈' : '📉'} {bet.direction}</span>
-                <span>{bet.stake} pts × {bet.multiplier}x · {bet.duration}</span>
+                <span>{bet.stake} pts · {bet.duration}</span>
               </div>
               <div className="bet-card-row muted" style={{ fontSize: 12 }}>Entry ${Number(bet.entryPrice).toFixed(2)} · RSI {bet.rsiAtEntry ?? '—'} · Trend {bet.trendAtEntry ?? '—'}</div>
               <button type="button" className="btn-resolve" onClick={() => handleSimResolve(bet)}>Resolve (demo)</button>

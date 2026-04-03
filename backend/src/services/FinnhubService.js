@@ -1,46 +1,64 @@
 /**
  * FinnhubService.js — Backend Finnhub API Service
- * Keeps the Finnhub API key securely on the server.
- * Frontend never touches this file or the API key.
+ * Requires FINNHUB_API_KEY in .env
  */
+const finnhub = require('finnhub');
 
-const API_KEY = process.env.FINNHUB_API_KEY;
-const BASE_URL = 'https://finnhub.io/api/v1';
+const api_key = finnhub.ApiClient.instance.authentications['api_key'];
+api_key.apiKey = process.env.FINNHUB_API_KEY;
 
-async function fetchWithThrottle(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Finnhub Error HTTP ${res.status}`);
-  return res.json();
-}
+const finnhubClient = new finnhub.DefaultApi();
 
 /**
  * Fetch current quote for a ticker
- * Returns: { c: current, d: change, dp: percent, h: high, l: low, o: open }
+ * Returns Finnhub native format: { c: current, d: change, dp: percent, h: high, l: low, o: open }
  */
 async function getQuote(symbol) {
-  if (!API_KEY) throw new Error('Missing Finnhub API Key');
-  return fetchWithThrottle(`${BASE_URL}/quote?symbol=${symbol}&token=${API_KEY}`);
+  return new Promise((resolve, reject) => {
+    finnhubClient.quote(symbol, (error, data, response) => {
+      if (error) {
+        console.error(`FinnhubService.getQuote Error for ${symbol}:`, error);
+        return reject(error);
+      }
+      resolve(data);
+    });
+  });
 }
 
 /**
  * Fetch OHLCV history (candles)
- * resolution: 1, 5, 15, 30, 60, D, W, M
  */
 async function getHistory(symbol, resolution = 'D', days = 30) {
-  if (!API_KEY) throw new Error('Missing Finnhub API Key');
-  const to   = Math.floor(Date.now() / 1000);
+  const to = Math.floor(Date.now() / 1000);
   const from = to - (days * 24 * 60 * 60);
-  return fetchWithThrottle(`${BASE_URL}/stock/candle?symbol=${symbol}&resolution=${resolution}&from=${from}&to=${to}&token=${API_KEY}`);
+
+  return new Promise((resolve, reject) => {
+    finnhubClient.stockCandles(symbol, resolution, from, to, (error, data, response) => {
+      if (error) {
+        console.error(`FinnhubService.getHistory Error for ${symbol}:`, error);
+        return reject(error);
+      }
+      resolve(data);
+    });
+  });
 }
 
 /**
  * Fetch recent company news
  */
 async function getCompanyNews(symbol, days = 7) {
-  if (!API_KEY) throw new Error('Missing Finnhub API Key');
-  const to   = new Date().toISOString().split('T')[0];
-  const from = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
-  return fetchWithThrottle(`${BASE_URL}/company-news?symbol=${symbol}&from=${from}&to=${to}&token=${API_KEY}`);
+  const today = new Date().toISOString().split('T')[0];
+  const lastWeek = new Date(Date.now() - (days * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
+
+  return new Promise((resolve, reject) => {
+    finnhubClient.companyNews(symbol, lastWeek, today, (error, data, response) => {
+      if (error) {
+        console.error(`FinnhubService.getCompanyNews Error for ${symbol}:`, error);
+        return reject(error);
+      }
+      resolve(data);
+    });
+  });
 }
 
 module.exports = { getQuote, getHistory, getCompanyNews };

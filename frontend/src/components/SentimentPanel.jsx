@@ -1,14 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCompanyNews } from '../api/apiClient';
-
-function guessSentiment(text) {
-  const t = text.toLowerCase();
-  const bullish = ['surges','rises','beats','record','growth','gains','strong','upgrade','buy','profit','up','boom','deal','win'];
-  const bearish  = ['falls','drops','miss','recall','slump','decline','investigation','lawsuit','downgrade','loss','cut','down','crash','weak'];
-  if (bullish.some(w => t.includes(w))) return { sentiment: 'positive', impact: 0.4 + (Math.random() * 0.4) };
-  if (bearish.some(w => t.includes(w))) return { sentiment: 'negative', impact: -0.4 - (Math.random() * 0.4) };
-  return { sentiment: 'neutral', impact: (Math.random() * 0.2) - 0.1 };
-}
+import { getCompanyNews, getRealSentiment } from '../api/apiClient';
 
 export default function SentimentPanel({ symbol }) {
   const [news, setNews] = useState([]);
@@ -18,17 +9,28 @@ export default function SentimentPanel({ symbol }) {
     if (!symbol) return;
     setLoading(true);
     getCompanyNews(symbol, 7)
-      .then(articles => {
-        if (!articles) { setNews([]); return; }
-        // Keep top 5 articles with real sentiment NLP scoring
-        const processed = articles.slice(0, 5).map(a => {
-          const { sentiment, impact } = guessSentiment(a.headline + ' ' + (a.summary || ''));
+      .then(async (articles) => {
+        if (!articles || articles.length === 0) { setNews([]); setLoading(false); return; }
+        
+        const subset = articles.slice(0, 5);
+        
+        let results = [];
+        try {
+          // Pass the symbol so FinBERT analyzes sentiment towards THIS specific stock
+          results = await getRealSentiment(subset, symbol);
+        } catch (err) {
+          console.error("Sentiment API call failed:", err);
+        }
+
+        const processed = subset.map((a, i) => {
+          const ai = results?.[i] || { sentiment: 'neutral', impact: 0 };
           return {
             source: a.source || 'Reuters',
             headline: a.headline,
+            url: a.url || '',
             stock: symbol,
-            sentiment,
-            impact
+            sentiment: ai.sentiment,
+            impact: ai.impact
           };
         });
         setNews(processed);
@@ -42,7 +44,7 @@ export default function SentimentPanel({ symbol }) {
 
   return (
     <div className="panel">
-      <h3 className="panel-title">📰 NLP Sentiment Analysis</h3>
+      <h3 className="panel-title">📰 NLP Sentiment Analysis — {symbol}</h3>
       
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -53,7 +55,7 @@ export default function SentimentPanel({ symbol }) {
       ) : news.length === 0 ? (
         <p className="empty-state">No recent news for {symbol}.</p>
       ) : (
-        <div className="sentiment-feed" style={{ maxHeight: '300px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+        <div className="sentiment-feed" style={{ maxHeight: '350px', overflowY: 'auto', paddingRight: '0.5rem' }}>
           {news.map((item, i) => (
             <div key={i} className={`sentiment-item sentiment-${item.sentiment}`} style={{ marginBottom: '0.5rem' }}>
               <div className="sentiment-header">
@@ -63,19 +65,55 @@ export default function SentimentPanel({ symbol }) {
                 <span className="sentiment-source">{item.source}</span>
                 <span className="sentiment-stock">{item.stock}</span>
               </div>
-              <div className="sentiment-headline">{item.headline}</div>
+
+              {/* Headline — clickable link to original article */}
+              {item.url ? (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="sentiment-headline"
+                  style={{
+                    display: 'block',
+                    color: 'var(--text)',
+                    textDecoration: 'none',
+                    cursor: 'pointer',
+                    transition: 'color 0.2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--primary)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text)'}
+                >
+                  {item.headline} <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>🔗</span>
+                </a>
+              ) : (
+                <div className="sentiment-headline">{item.headline}</div>
+              )}
+
               <div className="sentiment-bar-track">
                 <div 
                   className="sentiment-bar-fill" 
                   style={{ 
                     width: `${Math.abs(item.impact) * 100}%`, 
-                    background: item.impact > 0 ? 'var(--success)' : 'var(--danger)' 
+                    background: item.impact > 0 ? 'var(--success)' : item.impact < 0 ? 'var(--danger)' : 'var(--muted)' 
                   }} 
                 />
               </div>
-              <span className="sentiment-score">
-                AI Impact Factor: {(item.impact * 100).toFixed(0)}%
-              </span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="sentiment-score">
+                  {item.sentiment === 'positive' ? '🟢' : item.sentiment === 'negative' ? '🔴' : '🟡'}{' '}
+                  Impact on {item.stock}: {item.impact > 0 ? '+' : ''}{(item.impact * 100).toFixed(0)}%
+                </span>
+                {item.url && (
+                  <a 
+                    href={item.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ fontSize: '0.65rem', color: 'var(--primary)', textDecoration: 'none' }}
+                  >
+                    Read full article →
+                  </a>
+                )}
+              </div>
             </div>
           ))}
         </div>

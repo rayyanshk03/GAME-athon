@@ -4,7 +4,8 @@
  * generate useful content instead of a config error message.
  */
 const router = require('express').Router();
-const { callOpenAI, localRecommend, localExplain, localTip } = require('../services/openaiService');
+const { callOpenAI, localRecommend, localExplain, localTip, localInsight } = require('../services/openaiService');
+const { analyzeSentiment } = require('../services/FinbertService');
 
 // POST /api/ai/explain  { trade: {} }
 router.post('/explain', async (req, res) => {
@@ -79,6 +80,49 @@ Recommend 2 to consider and 1 to avoid. Use this exact format:
 Then add one general trading tip starting with 💡.`;
 
     const text = await callOpenAI(prompt, 240, fallback);
+    res.json({ text });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/ai/sentiment  { articles: [{ headline: '', summary: '' }], symbol: 'AMZN' }
+router.post('/sentiment', async (req, res) => {
+  try {
+    const { articles, symbol } = req.body;
+    if (!articles || !articles.length) return res.json({ sentiments: [] });
+
+    // Prepend the stock symbol so FinBERT evaluates sentiment *towards that stock*
+    const newsList = articles.map(a => {
+      const text = `${symbol || ''} stock: ${a.headline}`;
+      return text;
+    });
+    
+    // Call FinBERT (via Hugging Face) for professional financial sentiment
+    const sentiments = await analyzeSentiment(newsList);
+    
+    res.json({ sentiments });
+  } catch (err) {
+    console.error('Sentiment Analysis Error:', err);
+    res.json({ sentiments: [] });
+  }
+});
+
+// POST /api/ai/insight  { symbol: '', price: 0, rsi: 0, trend: '' }
+router.post('/insight', async (req, res) => {
+  try {
+    const { symbol, price, rsi, trend } = req.body;
+    const fallback = localInsight({ symbol, price, rsi, trend });
+    
+    let technicalContext = '';
+    if (rsi) technicalContext += `RSI is ${rsi}. `;
+    if (trend) technicalContext += `Trend is ${trend}.`;
+
+    const prompt = `You are a trading coach in StockQuest. 
+User selected ${symbol} trading at $${price}. ${technicalContext}
+Write exactly 2 sentences analyzing the risk and potential direction. Keep it concise, educational, and engaging. Do NOT make a definitive price prediction.`;
+
+    const text = await callOpenAI(prompt, 150, fallback);
     res.json({ text });
   } catch (err) {
     res.status(500).json({ error: err.message });

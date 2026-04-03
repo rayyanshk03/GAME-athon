@@ -41,15 +41,15 @@ function generateDailyFallbackHistory(basePrice, days = 90, seedSymbol = 'SPY') 
     const change = price * (rand() * 0.04 - 0.02);
     price = Math.max(price + change, basePrice * 0.5);
     const high = Math.max(open, price) * (1 + rand() * 0.012);
-    const low  = Math.min(open, price) * (1 - rand() * 0.012);
-    const vol  = Math.floor(rand() * 4e6 + 8e5);
+    const low = Math.min(open, price) * (1 - rand() * 0.012);
+    const vol = Math.floor(rand() * 4e6 + 8e5);
     out.push({
       time: d.getTime(),
       dateLabel: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       price: Math.round(price * 100) / 100,
-      open:  Math.round(open * 100) / 100,
-      high:  Math.round(high * 100) / 100,
-      low:   Math.round(low * 100) / 100,
+      open: Math.round(open * 100) / 100,
+      high: Math.round(high * 100) / 100,
+      low: Math.round(low * 100) / 100,
       volume: vol,
     });
   }
@@ -58,32 +58,32 @@ function generateDailyFallbackHistory(basePrice, days = 90, seedSymbol = 'SPY') 
 
 const MOCK_LEADERBOARD = [
   { rank: 1, name: 'TradeMaster99', points: 8420, delta: +312, winRate: 72, badges: ['Market Guru', 'Risk Master'] },
-  { rank: 2, name: 'BullRunKing',   points: 7815, delta: -180, winRate: 68, badges: ['First Profit'] },
-  { rank: 3, name: 'AlphaHunter',   points: 7203, delta: +450, winRate: 65, badges: ['Risk Master'] },
-  { rank: 4, name: 'QuantQueen',    points: 6540, delta: +210, winRate: 61, badges: ['Diversified'] },
-  { rank: 5, name: 'You',           points: 500,  delta: 0,    winRate: 0,  badges: [], isCurrentUser: true },
+  { rank: 2, name: 'BullRunKing', points: 7815, delta: -180, winRate: 68, badges: ['First Profit'] },
+  { rank: 3, name: 'AlphaHunter', points: 7203, delta: +450, winRate: 65, badges: ['Risk Master'] },
+  { rank: 4, name: 'QuantQueen', points: 6540, delta: +210, winRate: 61, badges: ['Diversified'] },
+  { rank: 5, name: 'You', points: 500, delta: 0, winRate: 0, badges: [], isCurrentUser: true },
 ];
 
 const MOCK_NEWS = {
   AAPL: [
-    { source: 'Reuters',     headline: 'Apple posts record iPhone sales in emerging markets',   sentiment: 'positive' },
-    { source: 'Bloomberg',   headline: 'Apple Vision Pro demand exceeds expectations',           sentiment: 'positive' },
-    { source: 'CNBC',        headline: 'Apple faces antitrust scrutiny in the EU',              sentiment: 'negative' },
+    { source: 'Reuters', headline: 'Apple posts record iPhone sales in emerging markets', sentiment: 'positive' },
+    { source: 'Bloomberg', headline: 'Apple Vision Pro demand exceeds expectations', sentiment: 'positive' },
+    { source: 'CNBC', headline: 'Apple faces antitrust scrutiny in the EU', sentiment: 'negative' },
   ],
   TSLA: [
-    { source: 'Reuters',     headline: 'Tesla EV demand softens amid price war',               sentiment: 'negative' },
-    { source: 'Bloomberg',   headline: 'Tesla Cybertruck deliveries surge in Q4',              sentiment: 'positive' },
-    { source: 'MarketWatch', headline: 'Tesla autopilot faces fresh regulatory inquiry',       sentiment: 'negative' },
+    { source: 'Reuters', headline: 'Tesla EV demand softens amid price war', sentiment: 'negative' },
+    { source: 'Bloomberg', headline: 'Tesla Cybertruck deliveries surge in Q4', sentiment: 'positive' },
+    { source: 'MarketWatch', headline: 'Tesla autopilot faces fresh regulatory inquiry', sentiment: 'negative' },
   ],
   NVDA: [
-    { source: 'WSJ',         headline: 'NVIDIA AI chip demand continues to surge globally',    sentiment: 'positive' },
-    { source: 'Bloomberg',   headline: 'NVIDIA posts record data center revenue',              sentiment: 'positive' },
-    { source: 'CNBC',        headline: 'NVIDIA supply constraints ease heading into Q2',       sentiment: 'positive' },
+    { source: 'WSJ', headline: 'NVIDIA AI chip demand continues to surge globally', sentiment: 'positive' },
+    { source: 'Bloomberg', headline: 'NVIDIA posts record data center revenue', sentiment: 'positive' },
+    { source: 'CNBC', headline: 'NVIDIA supply constraints ease heading into Q2', sentiment: 'positive' },
   ],
   DEFAULT: [
-    { source: 'Reuters',     headline: 'Markets eye Fed minutes for rate cut signals',         sentiment: 'neutral'  },
-    { source: 'Bloomberg',   headline: 'Tech sector rallies on strong earnings outlook',       sentiment: 'positive' },
-    { source: 'MarketWatch', headline: 'Bond yields stabilise as inflation data softens',      sentiment: 'positive' },
+    { source: 'Reuters', headline: 'Markets eye Fed minutes for rate cut signals', sentiment: 'neutral' },
+    { source: 'Bloomberg', headline: 'Tech sector rallies on strong earnings outlook', sentiment: 'positive' },
+    { source: 'MarketWatch', headline: 'Bond yields stabilise as inflation data softens', sentiment: 'positive' },
   ],
 };
 

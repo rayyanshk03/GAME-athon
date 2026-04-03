@@ -53,6 +53,20 @@ function localTip(stats) {
   return `✅ Solid ${winRate}% win rate with ${totalTrades} trades. Your edge is in ${bestSector} — keep specialising and raise stake size gradually.`;
 }
 
+function localInsight(data) {
+  const { symbol, price, rsi, trend } = data;
+  const isOversold = rsi && rsi < 40;
+  const isOverbought = rsi && rsi > 60;
+  
+  if (isOversold) {
+    return `📈 ${symbol} is trading near $${price} and looks oversold (RSI: ${rsi}). This could present a favorable risk/reward setup for an upward bounce if the trend stabilizes.`;
+  } else if (isOverbought) {
+    return `📉 ${symbol} currently at $${price} appears technically overbought (RSI: ${rsi}). Buyers should be cautious as a pullback may be imminent before further continuation.`;
+  } else {
+    return `⚖️ ${symbol} is at $${price} with mixed technicals (RSI: ${rsi || 'N/A'}, Trend: ${trend || 'Neutral'}). Wait for a clearer momentum shift before taking a large position.`;
+  }
+}
+
 async function callOpenAI(prompt, maxTokens = 300, fallback = null) {
   if (!API_KEY || API_KEY === 'your_actual_openai_api_key_here') {
     return fallback ?? OFFLINE_TIPS[Math.floor(Math.random() * OFFLINE_TIPS.length)];
@@ -82,4 +96,4 @@ async function callOpenAI(prompt, maxTokens = 300, fallback = null) {
   return data?.choices?.[0]?.message?.content ?? 'No response.';
 }
 
-module.exports = { callOpenAI, localRecommend, localExplain, localTip };
+module.exports = { callOpenAI, localRecommend, localExplain, localTip, localInsight };

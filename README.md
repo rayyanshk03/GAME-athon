@@ -79,7 +79,6 @@ buildathon/
 |---|---|
 | Virtual points (start 500) | `GamificationContext` |
 | Place / resolve bets | `OutcomeEngine.calculateOutcome` + `InvestActionPanel` |
-| Risk multiplier 1x / 2x / 3x | `OutcomeEngine.getMaxStake` + `InvestActionPanel` |
 | Timed bets (15m / 1h / 1d) | `OutcomeEngine.resolveTimedBet` |
 | Daily login +10 pts | `RewardsEngine.checkDailyLogin` |
 | 7-day streak bonus | `RewardsEngine.getStreakBonus` |

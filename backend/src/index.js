@@ -1,6 +1,6 @@
 /**
  * StockQuest Backend — src/index.js
- * Express API server — Storage proxy, AI relay, Engines, Finnhub proxy
+ * Express API server — Storage proxy, AI relay, Engines, Yahoo Finance proxy
  */
 const express = require('express');
 const cors    = require('cors');
@@ -30,6 +30,6 @@ app.get('/api/health', (_req, res) => res.json({ status: 'ok', version: '1.0.0' 
 // ── Start ──────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`⚡ StockQuest API running at http://localhost:${PORT}`);
-  console.log(`   Finnhub: ${process.env.FINNHUB_API_KEY ? '✅ Connected' : '⚠️  No key — using mock data'}`);
-  console.log(`   OpenAI:  ${process.env.OPENAI_API_KEY  ? '✅ Connected' : '⚠️  No key — using fallbacks'}`);
+  console.log(`   Yahoo Finance: ✅ Connected`);
+  console.log(`   OpenAI:  ${process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your_openai_api_key_here' ? '✅ Connected' : '⚠️  No key — using fallbacks'}`);
 });

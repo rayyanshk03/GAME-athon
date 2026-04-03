@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import StockDashboard from './components/StockDashboard';
 import PortfolioTracker from './components/PortfolioTracker';
@@ -14,15 +14,52 @@ import SocialHub from './components/SocialHub';
 import FlashContestRoom from './components/FlashContestRoom';
 import AIChatBot from './components/AIChatBot';
 import OutcomeNotification from './components/OutcomeNotification';
+import VirtualPortfolio from './components/VirtualPortfolio';
+import LoginPage from './components/LoginPage';
+import { getCurrentUser, logout } from './api/apiClient';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [user, setUser] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    async function initAuth() {
+      const storedUser = await getCurrentUser();
+      if (storedUser) setUser(storedUser);
+      setIsInitializing(false);
+    }
+    initAuth();
+  }, []);
+
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setUser(null);
+  };
+
+  if (isInitializing) {
+    return (
+      <div className="app-loading">
+        <div className="spinner"></div>
+        <p>Initializing StockQuest...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  }
 
   return (
     <div className="app-root">
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Header activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={handleLogout} />
       <main className="app-main">
         {activeTab === 'dashboard' && <StockDashboard />}
+        {activeTab === 'virtual'   && <VirtualPortfolio />}
         {activeTab === 'portfolio' && (
           <div className="two-col">
             <PortfolioTracker />

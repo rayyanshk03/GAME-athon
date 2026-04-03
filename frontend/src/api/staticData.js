@@ -6,14 +6,16 @@
  */
 
 export const STOCKS = [
-  { symbol: 'AAPL', name: 'Apple Inc.',      price: 189.30, change: 2.15,  changePercent:  1.15, sector: 'Technology',    volume: '52.3M', risk: 'moderate' },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.',  price: 175.48, change: -1.23, changePercent: -0.70, sector: 'Technology',    volume: '18.7M', risk: 'moderate' },
-  { symbol: 'TSLA', name: 'Tesla Inc.',      price: 248.50, change: 5.67,  changePercent:  2.33, sector: 'Automotive',   volume: '112M',  risk: 'high'     },
-  { symbol: 'AMZN', name: 'Amazon.com',      price: 198.20, change: -3.45, changePercent: -1.71, sector: 'E-Commerce',   volume: '34.2M', risk: 'moderate' },
-  { symbol: 'MSFT', name: 'Microsoft Corp.', price: 415.80, change: 4.20,  changePercent:  1.02, sector: 'Technology',   volume: '20.5M', risk: 'low'      },
-  { symbol: 'NVDA', name: 'NVIDIA Corp.',    price: 875.40, change: 15.30, changePercent:  1.78, sector: 'Semiconductors',volume: '48.6M', risk: 'high'     },
-  { symbol: 'META', name: 'Meta Platforms',  price: 512.60, change: -8.90, changePercent: -1.71, sector: 'Social Media', volume: '15.3M', risk: 'moderate' },
-  { symbol: 'JPM',  name: 'JPMorgan Chase',  price: 215.30, change: 1.85,  changePercent:  0.87, sector: 'Finance',      volume: '8.9M',  risk: 'low'      },
+  { symbol: 'RELIANCE.NS',  name: 'Reliance Industries', price: 1280.00, change: 12.50, changePercent: 0.98,  sector: 'Energy',     volume: '8.2M',  risk: 'moderate' },
+  { symbol: 'TCS.NS',       name: 'Tata Consultancy',    price: 3450.00, change: -22.0, changePercent: -0.63, sector: 'Technology', volume: '3.1M',  risk: 'low'      },
+  { symbol: 'INFY.NS',      name: 'Infosys Ltd.',        price: 1520.00, change: 18.70, changePercent: 1.24,  sector: 'Technology', volume: '6.8M',  risk: 'low'      },
+  { symbol: 'HDFCBANK.NS',  name: 'HDFC Bank',           price: 1740.00, change: -9.50, changePercent: -0.54, sector: 'Finance',    volume: '9.4M',  risk: 'low'      },
+  { symbol: 'WIPRO.NS',     name: 'Wipro Ltd.',          price: 468.00,  change: 5.20,  changePercent: 1.12,  sector: 'Technology', volume: '7.3M',  risk: 'moderate' },
+  { symbol: 'ICICIBANK.NS', name: 'ICICI Bank',          price: 1185.00, change: 14.30, changePercent: 1.22,  sector: 'Finance',    volume: '12.1M', risk: 'moderate' },
+  { symbol: 'SBIN.NS',      name: 'State Bank of India', price: 772.00,  change: -6.80, changePercent: -0.87, sector: 'Finance',    volume: '18.6M', risk: 'moderate' },
+  { symbol: 'BAJFINANCE.NS',name: 'Bajaj Finance',       price: 6850.00, change: 85.00, changePercent: 1.26,  sector: 'Finance',    volume: '1.2M',  risk: 'high'     },
+  { symbol: 'TATAMOTORS.NS',name: 'Tata Motors',         price: 690.00,  change: -11.2, changePercent: -1.60, sector: 'Automotive', volume: '14.5M', risk: 'high'     },
+  { symbol: 'HINDUNILVR.NS',name: 'Hindustan Unilever',  price: 2320.00, change: 8.40,  changePercent: 0.36,  sector: 'FMCG',       volume: '2.8M',  risk: 'low'      },
 ];
 
 export const MOCK_LEADERBOARD = [
